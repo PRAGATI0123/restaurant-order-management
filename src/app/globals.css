@@ -1,26 +1,134 @@
 @import "tailwindcss";
 
+/*
+ * Dark mode is switched by a "dark" class on <html> (added by next-themes),
+ * not by the operating system setting directly. That lets the user choose.
+ * This line makes Tailwind's `dark:` prefix follow that class.
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * ───────────────────────── THEME COLORS ─────────────────────────
+ * Taken from the reference photo of the restaurant:
+ *   teal velvet chairs → primary     mustard chairs → accent
+ *   wood floor         → wood        brick wall     → danger
+ *   plants             → success     steel frame    → steel
+ *   charcoal ceiling   → dark mode   warm linen     → light mode
+ *
+ * Every text/background pair was checked for contrast (≥ 4.5 : 1, WCAG AA).
+ * Components never use hex codes directly. They use names like `bg-primary`,
+ * so changing a color here changes it everywhere.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Surfaces */
+  --background: #f6f1e9; /* warm linen page background */
+  --surface: #ffffff; /* cards, panels */
+  --surface-muted: #efe8dc; /* subtle areas, hovered rows */
+  --border: #e2d8c9;
+
+  /* Text */
+  --foreground: #1b2326;
+  --muted-foreground: #5a6164;
+
+  /* Brand */
+  --primary: #0e6b6e; /* velvet teal */
+  --primary-hover: #0b5a5d;
+  --primary-foreground: #ffffff;
+  --accent: #e9a93a; /* saffron */
+  --accent-foreground: #2a1e0a;
+  --wood: #8a5737; /* walnut */
+  --wood-foreground: #ffffff;
+
+  /* Meaning */
+  --success: #3d7530; /* leaf green */
+  --success-foreground: #ffffff;
+  --danger: #a9472a; /* brick */
+  --danger-foreground: #ffffff;
+  --steel: #4e6e7b; /* steel blue-grey */
+  --steel-foreground: #ffffff;
+
+  --ring: #0e6b6e; /* keyboard focus outline */
 }
 
+.dark {
+  --background: #121618; /* charcoal */
+  --surface: #1b2124;
+  --surface-muted: #242b2f;
+  --border: #2f383c;
+
+  --foreground: #ede7dd;
+  --muted-foreground: #a3a9a6;
+
+  /* Brighter versions so they stand out on a dark background */
+  --primary: #2ba3a3;
+  --primary-hover: #36b5b5;
+  --primary-foreground: #0b1a1b;
+  --accent: #f0b54d;
+  --accent-foreground: #2a1e0a;
+  --wood: #c08458;
+  --wood-foreground: #1b1209;
+
+  --success: #6db35a;
+  --success-foreground: #0e1a0b;
+  --danger: #e07250;
+  --danger-foreground: #1e0d07;
+  --steel: #8aa7b3;
+  --steel-foreground: #0f1a1f;
+
+  --ring: #2ba3a3;
+}
+
+/*
+ * Turn the CSS variables above into Tailwind classes.
+ * `--color-primary` gives us bg-primary, text-primary, border-primary, etc.
+ * `inline` means Tailwind writes var(--primary) into each class, so the class
+ * follows the variable when we switch between light and dark.
+ */
 @theme inline {
   --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-border: var(--border);
+
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-muted-foreground: var(--muted-foreground);
+
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-wood: var(--wood);
+  --color-wood-foreground: var(--wood-foreground);
+
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-danger: var(--danger);
+  --color-danger-foreground: var(--danger-foreground);
+  --color-steel: var(--steel);
+  --color-steel-foreground: var(--steel-foreground);
+
+  --color-ring: var(--ring);
+
+  /* Table states: one meaning → one color, used on the floor plan and badges */
+  --color-table-available: var(--success);
+  --color-table-occupied: var(--danger);
+  --color-table-reserved: var(--accent);
+  --color-table-cleaning: var(--steel);
+
+  /* Fonts (the variables are created by next/font in app/layout.tsx) */
+  --font-sans: var(--font-jakarta);
+  --font-display: var(--font-fraunces);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+/* Base page styles */
 body {
-  background: var(--background);
+  background-color: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Keyboard users always see where they are (touch and mouse users don't get the ring) */
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
 }

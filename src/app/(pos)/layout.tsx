@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ThemeToggle } from "@/components/layout/theme-toggle";
 
 // Every page inside the (pos) folder is wrapped by this layout.
 // Right now it is only a plain list of links so we can click through all pages.
@@ -28,6 +29,7 @@ export default function PosLayout({ children }: { children: React.ReactNode }) {
             <Link href="/login">Log out</Link>
           </li>
         </ul>
+        <ThemeToggle />
       </nav>
       <hr />
       {children}
