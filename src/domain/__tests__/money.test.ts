@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   allocate,
   assertPaise,
+  formatPrice,
   formatRupees,
+  paiseToText,
   parseRupees,
   percentOf,
   sumPaise,
@@ -53,6 +55,27 @@ describe("formatRupees", () => {
 
   it("uses Indian digit grouping (lakhs)", () => {
     expect(formatRupees(12345678)).toBe("₹1,23,456.78");
+  });
+});
+
+describe("formatPrice (menu prices)", () => {
+  it("drops .00 for whole rupees but keeps real paise", () => {
+    expect(formatPrice(18000)).toBe("₹180");
+    expect(formatPrice(12550)).toBe("₹125.50");
+    expect(formatPrice(10000000)).toBe("₹1,00,000");
+  });
+});
+
+describe("paiseToText (filling a form field)", () => {
+  it.each([
+    [18000, "180"],
+    [12550, "125.50"],
+    [12505, "125.05"],
+    [5, "0.05"],
+    [0, "0"],
+  ])("%i paise → %s", (paise, text) => {
+    expect(paiseToText(paise)).toBe(text);
+    expect(parseRupees(text)).toBe(paise); // and back again, exactly
   });
 });
 

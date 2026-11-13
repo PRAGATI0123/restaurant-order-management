@@ -50,6 +50,33 @@ export function formatRupees(amount: Paise): string {
   return rupeeFormatter.format(amount / 100);
 }
 
+const wholeRupeeFormatter = new Intl.NumberFormat("en-IN", {
+  style: "currency",
+  currency: "INR",
+  maximumFractionDigits: 0,
+});
+
+/**
+ * Like formatRupees, but drops ".00" for whole rupees: 18000 → "₹180",
+ * 12550 → "₹125.50". For menu prices. Bills always use formatRupees.
+ */
+export function formatPrice(amount: Paise): string {
+  return amount % 100 === 0
+    ? wholeRupeeFormatter.format(amount / 100)
+    : formatRupees(amount);
+}
+
+/**
+ * Paise back into the text a person would type, for filling a form field:
+ * 18000 → "180",  12550 → "125.50",  5 → "0.05". Exact, no decimals involved.
+ */
+export function paiseToText(amount: Paise): string {
+  assertPaise(amount);
+  const rupees = Math.floor(amount / 100);
+  const paise = amount % 100;
+  return paise === 0 ? String(rupees) : `${rupees}.${String(paise).padStart(2, "0")}`;
+}
+
 /**
  * a × b ÷ c, rounded to the nearest whole number; exactly halfway rounds UP.
  * Uses BigInt (whole numbers of any size), so it is exact and can't overflow.
