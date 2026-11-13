@@ -1,18 +1,20 @@
+import { SlidersHorizontal } from "lucide-react";
 import type { Metadata } from "next";
-import Link from "next/link";
+import { PagePlaceholder } from "@/components/layout/page-placeholder";
+import { PageHeader } from "@/components/layout/page-header";
 
 export const metadata: Metadata = { title: "Modifiers" };
 
 // Route: /menu/modifiers
 export default function MenuModifiersPage() {
   return (
-    <main>
-      <h1>Variants, Add-ons and Modifiers</h1>
-      <p>
-        Sizes (Half / Full), add-ons (Extra cheese) and modifier groups (Spice level).
-        (Built in Step 36)
-      </p>
-      <Link href="/menu">Back to menu</Link>
-    </main>
+    <>
+      <PageHeader
+        title="Variants, Add-ons and Modifiers"
+        description="Sizes (Half / Full), add-ons (Extra cheese) and choices (Spice level)."
+        back={{ href: "/menu", label: "Back to menu" }}
+      />
+      <PagePlaceholder icon={SlidersHorizontal} step={11} />
+    </>
   );
 }

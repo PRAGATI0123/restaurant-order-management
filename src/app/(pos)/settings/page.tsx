@@ -1,16 +1,19 @@
+import { Settings } from "lucide-react";
 import type { Metadata } from "next";
+import { PagePlaceholder } from "@/components/layout/page-placeholder";
+import { PageHeader } from "@/components/layout/page-header";
 
 export const metadata: Metadata = { title: "Settings" };
 
 // Route: /settings
 export default function SettingsPage() {
   return (
-    <main>
-      <h1>Settings</h1>
-      <p>
-        Tax rate, staff, mock API delay and error switches, and reset demo data. (Built in
-        Step 54)
-      </p>
-    </main>
+    <>
+      <PageHeader
+        title="Settings"
+        description="Tax rate, staff, mock API switches and demo data."
+      />
+      <PagePlaceholder icon={Settings} step={18} />
+    </>
   );
 }

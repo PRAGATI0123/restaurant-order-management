@@ -1,23 +1,19 @@
+import { ClipboardList } from "lucide-react";
 import type { Metadata } from "next";
-import Link from "next/link";
+import { PagePlaceholder } from "@/components/layout/page-placeholder";
+import { PageHeader } from "@/components/layout/page-header";
 
 export const metadata: Metadata = { title: "Orders" };
 
 // Route: /orders
 export default function OrdersPage() {
   return (
-    <main>
-      <h1>Orders</h1>
-      <p>All orders with status filters. (Built in Step 42)</p>
-      <ul>
-        <li>
-          <Link href="/orders/new">New order</Link>
-        </li>
-        <li>
-          {/* "demo-1" is a placeholder ID until real orders exist */}
-          <Link href="/orders/demo-1">Open sample order demo-1</Link>
-        </li>
-      </ul>
-    </main>
+    <>
+      <PageHeader
+        title="Orders"
+        description="Every dine-in, takeaway and delivery order, with status filters."
+      />
+      <PagePlaceholder icon={ClipboardList} step={14} />
+    </>
   );
 }

@@ -1,6 +1,8 @@
+import { FileText } from "lucide-react";
 import type { Metadata } from "next";
-import Link from "next/link";
 import { Suspense } from "react";
+import { PagePlaceholder } from "@/components/layout/page-placeholder";
+import { PageHeader } from "@/components/layout/page-header";
 
 export const metadata: Metadata = { title: "Invoice" };
 
@@ -9,17 +11,17 @@ export default function InvoicePage({
   params,
 }: PageProps<"/billing/invoice/[invoiceId]">) {
   return (
-    <main>
-      <h1>Invoice</h1>
-      <Suspense fallback={<p>Loading invoice…</p>}>
-        {params.then(({ invoiceId }) => (
-          <>
-            <p>Invoice number: {invoiceId}</p>
-            <p>A print-friendly invoice with a Print button. (Built in Step 49)</p>
-            <Link href="/billing">Back to billing</Link>
-          </>
-        ))}
-      </Suspense>
-    </main>
+    <>
+      <PageHeader
+        title="Invoice"
+        description={
+          <Suspense fallback="Loading invoice…">
+            {params.then(({ invoiceId }) => `Printable invoice ${invoiceId}.`)}
+          </Suspense>
+        }
+        back={{ href: "/billing", label: "Back to billing" }}
+      />
+      <PagePlaceholder icon={FileText} step={16} />
+    </>
   );
 }

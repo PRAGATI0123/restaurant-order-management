@@ -1,23 +1,27 @@
+import { ArrowRightLeft } from "lucide-react";
 import type { Metadata } from "next";
-import Link from "next/link";
 import { Suspense } from "react";
+import { PagePlaceholder } from "@/components/layout/page-placeholder";
+import { PageHeader } from "@/components/layout/page-header";
 
 export const metadata: Metadata = { title: "Split Order" };
 
 // Route: /orders/[orderId]/split  e.g. /orders/demo-1/split
 export default function SplitOrderPage({ params }: PageProps<"/orders/[orderId]/split">) {
   return (
-    <main>
-      <h1>Split Order</h1>
-      <Suspense fallback={<p>Loading order…</p>}>
-        {params.then(({ orderId }) => (
-          <>
-            <p>Splitting order: {orderId}</p>
-            <p>Move items from this order into a new order. (Built in Step 44)</p>
-            <Link href={`/orders/${orderId}`}>Back to order</Link>
-          </>
-        ))}
-      </Suspense>
-    </main>
+    <>
+      <PageHeader
+        title="Split Order"
+        description={
+          <Suspense fallback="Loading order…">
+            {params.then(
+              ({ orderId }) => `Move items from order ${orderId} into a new order.`,
+            )}
+          </Suspense>
+        }
+        back={{ href: "/orders", label: "Back to orders" }}
+      />
+      <PagePlaceholder icon={ArrowRightLeft} step={14} />
+    </>
   );
 }

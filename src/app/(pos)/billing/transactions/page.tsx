@@ -1,15 +1,20 @@
+import { ListOrdered } from "lucide-react";
 import type { Metadata } from "next";
-import Link from "next/link";
+import { PagePlaceholder } from "@/components/layout/page-placeholder";
+import { PageHeader } from "@/components/layout/page-header";
 
 export const metadata: Metadata = { title: "Transactions" };
 
 // Route: /billing/transactions
 export default function TransactionsPage() {
   return (
-    <main>
-      <h1>Transaction History</h1>
-      <p>Every completed payment, with method, amount and time. (Built in Step 50)</p>
-      <Link href="/billing">Back to billing</Link>
-    </main>
+    <>
+      <PageHeader
+        title="Transaction History"
+        description="Every completed payment, with method, amount and time."
+        back={{ href: "/billing", label: "Back to billing" }}
+      />
+      <PagePlaceholder icon={ListOrdered} step={16} />
+    </>
   );
 }

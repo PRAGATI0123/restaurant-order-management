@@ -8,6 +8,8 @@ type EmptyStateProps = {
   /** Usually a button that fixes the emptiness, e.g. "New order". */
   action?: React.ReactNode;
   className?: string;
+  /** Heading level of the title. Use "h1" when the empty state IS the page (e.g. 404). */
+  titleAs?: "h1" | "h2" | "h3";
 };
 
 /**
@@ -21,6 +23,7 @@ export function EmptyState({
   description,
   action,
   className,
+  titleAs: Title = "h3",
 }: EmptyStateProps) {
   return (
     <div
@@ -32,7 +35,7 @@ export function EmptyState({
       <div className="flex size-14 items-center justify-center rounded-full bg-surface-muted text-muted-foreground">
         <Icon className="size-7" aria-hidden="true" />
       </div>
-      <h3 className="text-lg font-semibold">{title}</h3>
+      <Title className="text-lg font-semibold">{title}</Title>
       {description && <p className="max-w-sm text-muted-foreground">{description}</p>}
       {action && <div className="mt-2">{action}</div>}
     </div>

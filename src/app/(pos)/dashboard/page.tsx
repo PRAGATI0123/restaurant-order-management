@@ -1,16 +1,19 @@
+import { LayoutDashboard } from "lucide-react";
 import type { Metadata } from "next";
+import { PagePlaceholder } from "@/components/layout/page-placeholder";
+import { PageHeader } from "@/components/layout/page-header";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
 // Route: /dashboard
 export default function DashboardPage() {
   return (
-    <main>
-      <h1>Dashboard</h1>
-      <p>
-        Today&apos;s sales, active orders, occupied tables, order status summary and sales
-        charts. (Built in Steps 51–52)
-      </p>
-    </main>
+    <>
+      <PageHeader
+        title="Dashboard"
+        description="Today's sales, active orders and table status at a glance."
+      />
+      <PagePlaceholder icon={LayoutDashboard} step={17} />
+    </>
   );
 }

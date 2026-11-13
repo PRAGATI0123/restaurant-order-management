@@ -1,16 +1,19 @@
+import { ChefHat } from "lucide-react";
 import type { Metadata } from "next";
+import { PagePlaceholder } from "@/components/layout/page-placeholder";
+import { PageHeader } from "@/components/layout/page-header";
 
 export const metadata: Metadata = { title: "Kitchen" };
 
 // Route: /kitchen
 export default function KitchenPage() {
   return (
-    <main>
-      <h1>Kitchen Display</h1>
-      <p>
-        Incoming orders, preparation status, elapsed time, and late orders highlighted.
-        (Built in Steps 45–46)
-      </p>
-    </main>
+    <>
+      <PageHeader
+        title="Kitchen Display"
+        description="Incoming tickets, preparation status and timers. Late orders are highlighted."
+      />
+      <PagePlaceholder icon={ChefHat} step={15} />
+    </>
   );
 }

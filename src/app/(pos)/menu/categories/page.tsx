@@ -1,15 +1,20 @@
+import { Layers } from "lucide-react";
 import type { Metadata } from "next";
-import Link from "next/link";
+import { PagePlaceholder } from "@/components/layout/page-placeholder";
+import { PageHeader } from "@/components/layout/page-header";
 
 export const metadata: Metadata = { title: "Menu Categories" };
 
 // Route: /menu/categories
 export default function MenuCategoriesPage() {
   return (
-    <main>
-      <h1>Menu Categories</h1>
-      <p>Create, rename and reorder categories like Starters, Mains, Drinks. (Step 35)</p>
-      <Link href="/menu">Back to menu</Link>
-    </main>
+    <>
+      <PageHeader
+        title="Menu Categories"
+        description="Group the menu into sections like Starters, Mains and Drinks."
+        back={{ href: "/menu", label: "Back to menu" }}
+      />
+      <PagePlaceholder icon={Layers} step={11} />
+    </>
   );
 }

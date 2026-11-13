@@ -1,13 +1,16 @@
+import { ChartColumn } from "lucide-react";
 import type { Metadata } from "next";
+import { PagePlaceholder } from "@/components/layout/page-placeholder";
+import { PageHeader } from "@/components/layout/page-header";
 
 export const metadata: Metadata = { title: "Reports" };
 
 // Route: /reports
 export default function ReportsPage() {
   return (
-    <main>
-      <h1>Reports</h1>
-      <p>Sales and order reports filtered by date range. (Built in Step 53)</p>
-    </main>
+    <>
+      <PageHeader title="Reports" description="Sales and orders for any date range." />
+      <PagePlaceholder icon={ChartColumn} step={17} />
+    </>
   );
 }
