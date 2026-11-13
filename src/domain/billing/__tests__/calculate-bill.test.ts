@@ -175,7 +175,7 @@ describe("calculateBill: rules that hold for ANY order", () => {
           unitPricePaise: random(100_000),
           quantity: 1 + random(5),
           addOns: random(2) ? [option("extra", random(5000))] : [],
-          status: random(8) === 0 ? "cancelled" : "pending",
+          status: random(8) === 0 ? "cancelled" : "active",
         }),
       );
       // Typed list, so TypeScript knows "percent" means the Discount kind, not any text.

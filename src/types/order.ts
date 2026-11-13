@@ -2,11 +2,21 @@ import type { Id, IsoDateTime, Paise } from "./common";
 
 export type OrderType = "dine-in" | "takeaway" | "delivery";
 
-/** Where the whole order is. Allowed moves between them come in Step 8. */
+/**
+ * Where the whole order is. The kitchen works on the order as one ticket.
+ * Which moves are allowed: domain/orders/order-state-machine.ts
+ */
 export type OrderStatus = "new" | "preparing" | "ready" | "served" | "paid" | "cancelled";
 
-/** Where one item is in the kitchen. */
-export type OrderItemStatus = "pending" | "preparing" | "ready" | "served" | "cancelled";
+/** An item is either still part of the order, or cancelled (and not charged). */
+export type OrderItemStatus = "active" | "cancelled";
+
+/** One entry in the order's timeline: "Preparing, at 14:05, by Meera". */
+export type OrderStatusChange = {
+  status: OrderStatus;
+  at: IsoDateTime;
+  by: Id; // staff id
+};
 
 /**
  * An option the guest picked (add-on or modifier), COPIED from the menu at the
@@ -32,6 +42,7 @@ export type OrderItem = {
   quantity: number; // whole number, at least 1
   note?: string; // "less oil"
   status: OrderItemStatus;
+  cancelReason?: string; // set when status is "cancelled"
 };
 
 /**
@@ -58,6 +69,9 @@ export type Order = {
   delivery?: DeliveryDetails; // delivery only
   items: OrderItem[];
   discount?: Discount;
+  /** Every status the order has been in, oldest first. Starts with "new". */
+  statusHistory: OrderStatusChange[];
+  cancelReason?: string; // set when status is "cancelled"
   createdBy: Id; // staff id
   createdAt: IsoDateTime;
   updatedAt: IsoDateTime;

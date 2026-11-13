@@ -1,4 +1,8 @@
-import type { ChosenOption, OrderItem } from "@/types/order";
+import type { ChosenOption, Order, OrderItem } from "@/types/order";
+import type { RestaurantTable } from "@/types/table";
+
+/** A fixed "now" so tests never depend on the real clock. */
+export const NOW = "2026-11-13T12:00:00.000Z";
 
 let nextId = 1;
 
@@ -17,7 +21,41 @@ export function makeItem(overrides: Partial<OrderItem> = {}): OrderItem {
     addOns: [],
     modifiers: [],
     quantity: 1,
-    status: "pending",
+    status: "active",
+    ...overrides,
+  };
+}
+
+/** A dine-in order with one item, status "new", unless you override parts. */
+export function makeOrder(overrides: Partial<Order> = {}): Order {
+  const id = `order-${nextId++}`;
+  const status = overrides.status ?? "new";
+  return {
+    id,
+    number: 42,
+    type: "dine-in",
+    status,
+    tableIds: [],
+    items: [makeItem()],
+    statusHistory: [{ status, at: NOW, by: "staff-1" }],
+    createdBy: "staff-1",
+    createdAt: NOW,
+    updatedAt: NOW,
+    ...overrides,
+  };
+}
+
+/** A free 4-seat table named after its id, unless you override parts. */
+export function makeTable(overrides: Partial<RestaurantTable> = {}): RestaurantTable {
+  const id = overrides.id ?? `table-${nextId++}`;
+  return {
+    id,
+    name: overrides.name ?? id.toUpperCase(),
+    seats: 4,
+    shape: "square",
+    status: "available",
+    x: 0,
+    y: 0,
     ...overrides,
   };
 }
