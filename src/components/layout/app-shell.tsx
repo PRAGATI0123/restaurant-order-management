@@ -14,7 +14,7 @@ export function Brand() {
       </span>
       <span className="flex flex-col leading-tight">
         <span className="font-display text-lg font-semibold">Restaurant POS</span>
-        <span className="text-xs text-muted-foreground">The Velvet Bistro</span>
+        <span className="text-xs text-muted-foreground">my restaurant name</span>
       </span>
     </Link>
   );

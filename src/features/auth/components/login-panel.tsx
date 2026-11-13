@@ -87,7 +87,7 @@ export function LoginPanel() {
           })}
         </div>
         <p className="text-sm text-muted-foreground">
-          Demo: any 4-digit PIN works for now. Real PIN checks come in Step 10.
+          Demo: any 4-digit PIN works for now.
         </p>
       </div>
 

@@ -6,12 +6,5 @@ import { EmptyState } from "@/components/ui/empty-state";
  * Each page replaces this with its real content in its own step.
  */
 export function PagePlaceholder({ icon, step }: { icon: LucideIcon; step: number }) {
-  return (
-    <EmptyState
-      icon={icon}
-      title="Coming soon"
-      description={`This screen is built in Step ${step}.`}
-      className="bg-surface"
-    />
-  );
+  return <EmptyState icon={icon} title="" description={``} className="bg-surface" />;
 }
