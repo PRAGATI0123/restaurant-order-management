@@ -1,0 +1,10 @@
+# Store every text file with LF line endings inside Git.
+# Windows uses CRLF and Mac/Linux use LF; without this, the same file can look
+# "changed" on every line just because it was saved on a different computer.
+* text=auto eol=lf
+
+# Binary files: never touch their bytes.
+*.ico binary
+*.png binary
+*.jpg binary
+*.webp binary
