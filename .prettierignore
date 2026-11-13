@@ -1,0 +1,10 @@
+# Generated or installed files: never format these.
+node_modules
+.next
+out
+build
+coverage
+next-env.d.ts
+
+# Lock files are written by npm. Formatting them only creates noise.
+package-lock.json
