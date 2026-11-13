@@ -121,6 +121,30 @@
   --font-display: var(--font-fraunces);
 }
 
+/* Animations, available as the classes animate-dialog-in and animate-sheet-in */
+@theme {
+  --animate-dialog-in: dialog-in 160ms ease-out;
+  --animate-sheet-in: sheet-in 240ms cubic-bezier(0.32, 0.72, 0, 1);
+
+  @keyframes dialog-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px) scale(0.98);
+    }
+  }
+
+  @keyframes sheet-in {
+    from {
+      transform: translateY(100%);
+    }
+  }
+}
+
+/* While a popup is open, the page behind it can't scroll. Pure CSS, no JavaScript. */
+html:has(dialog[open]:modal) {
+  overflow: hidden;
+}
+
 /* Base page styles */
 body {
   background-color: var(--background);
