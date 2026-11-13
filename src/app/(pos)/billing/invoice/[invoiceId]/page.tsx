@@ -5,7 +5,9 @@ import { Suspense } from "react";
 export const metadata: Metadata = { title: "Invoice" };
 
 // Route: /billing/invoice/[invoiceId]  e.g. /billing/invoice/demo-inv-1
-export default function InvoicePage({ params }: PageProps<"/billing/invoice/[invoiceId]">) {
+export default function InvoicePage({
+  params,
+}: PageProps<"/billing/invoice/[invoiceId]">) {
   return (
     <main>
       <h1>Invoice</h1>

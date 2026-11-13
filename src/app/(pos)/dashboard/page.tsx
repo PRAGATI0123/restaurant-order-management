@@ -8,8 +8,8 @@ export default function DashboardPage() {
     <main>
       <h1>Dashboard</h1>
       <p>
-        Today&apos;s sales, active orders, occupied tables, order status summary and
-        sales charts. (Built in Steps 51–52)
+        Today&apos;s sales, active orders, occupied tables, order status summary and sales
+        charts. (Built in Steps 51–52)
       </p>
     </main>
   );
