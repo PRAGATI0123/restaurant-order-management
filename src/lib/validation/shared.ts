@@ -2,6 +2,13 @@ import { z } from "zod";
 import { parseRupees } from "@/domain/money";
 import type { Paise } from "@/types/common";
 
+/**
+ * What every form validator returns: clean data, or one message per field.
+ * Field names inside lists look like "options.1.name" (second option's name).
+ */
+export type Result<T> =
+  { ok: true; data: T } | { ok: false; errors: Record<string, string> };
+
 /** ₹1,00,000. Anything above is almost certainly a typo (an extra zero or two). */
 export const MAX_PRICE_PAISE: Paise = 1_00_000_00;
 

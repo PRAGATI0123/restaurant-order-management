@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { Id } from "@/types/common";
 import type { AddOn, MenuCategory, ModifierGroup } from "@/types/menu";
-import { firstErrors, nameField, priceField, sameName } from "./shared";
+import { firstErrors, nameField, priceField, sameName, type Result } from "./shared";
 
 /**
  * FORM RULES for categories, add-ons, option groups and sizes.
@@ -9,8 +9,6 @@ import { firstErrors, nameField, priceField, sameName } from "./shared";
  * in paise), or { ok: false, errors } with one message per field.
  * Field names inside lists look like "options.1.name" (second option's name).
  */
-export type Result<T> =
-  { ok: true; data: T } | { ok: false; errors: Record<string, string> };
 
 /** One editable row: a size ("Half" ₹180) or an option ("Hot" +₹0). */
 export type PriceRow = {
