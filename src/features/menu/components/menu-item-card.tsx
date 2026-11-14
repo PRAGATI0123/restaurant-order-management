@@ -24,8 +24,8 @@ function initials(name: string): string {
 function choicesSummary(item: MenuItem): string | undefined {
   const parts = [
     item.variants.length > 0 && `${item.variants.length} sizes`,
-    item.addOns.length > 0 && "Add-ons",
-    item.modifierGroups.length > 0 && "Options",
+    item.addOnIds.length > 0 && "Add-ons",
+    item.modifierGroupIds.length > 0 && "Options",
   ].filter(Boolean);
   return parts.length > 0 ? parts.join(" · ") : undefined;
 }

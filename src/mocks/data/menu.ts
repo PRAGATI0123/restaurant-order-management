@@ -15,7 +15,7 @@ export const sampleCategories: MenuCategory[] = [
   { id: "cat-desserts", name: "Desserts", sortOrder: 5 },
 ];
 
-// Options shared by several dishes
+// SHARED OPTION GROUPS: dishes point to these by id.
 const spiceLevel: ModifierGroup = {
   id: "mod-spice",
   name: "Spice level",
@@ -27,16 +27,56 @@ const spiceLevel: ModifierGroup = {
     { id: "mod-spice-hot", name: "Hot", pricePaise: 0 },
   ],
 };
+const sodaTaste: ModifierGroup = {
+  id: "mod-soda",
+  name: "Taste",
+  minSelect: 1,
+  maxSelect: 1,
+  options: [
+    { id: "mod-soda-sweet", name: "Sweet", pricePaise: 0 },
+    { id: "mod-soda-salted", name: "Salted", pricePaise: 0 },
+    { id: "mod-soda-mixed", name: "Mixed", pricePaise: 0 },
+  ],
+};
+const noOnionGarlic: ModifierGroup = {
+  id: "mod-jain",
+  name: "Dietary requests",
+  minSelect: 0,
+  maxSelect: 2,
+  options: [
+    { id: "mod-jain-no-onion", name: "No onion", pricePaise: 0 },
+    { id: "mod-jain-no-garlic", name: "No garlic", pricePaise: 0 },
+  ],
+};
+export const sampleModifierGroups: ModifierGroup[] = [
+  spiceLevel,
+  sodaTaste,
+  noOnionGarlic,
+];
+
+// SHARED ADD-ONS: dishes point to these by id.
 const extraCheese: AddOn = { id: "add-cheese", name: "Extra cheese", pricePaise: 4000 };
 const extraButter: AddOn = { id: "add-butter", name: "Extra butter", pricePaise: 3000 };
 const extraGravy: AddOn = { id: "add-gravy", name: "Extra gravy", pricePaise: 6000 };
+const iceCream: AddOn = {
+  id: "add-ice-cream",
+  name: "Scoop of ice cream",
+  pricePaise: 5000,
+};
+export const sampleAddOns: AddOn[] = [extraCheese, extraButter, extraGravy, iceCream];
 
 /** Builds an item with the common defaults, so the list below stays short. */
 function item(
   fields: Pick<MenuItem, "id" | "name" | "categoryId" | "pricePaise" | "isVeg"> &
     Partial<MenuItem>,
 ): MenuItem {
-  return { isAvailable: true, variants: [], addOns: [], modifierGroups: [], ...fields };
+  return {
+    isAvailable: true,
+    variants: [],
+    addOnIds: [],
+    modifierGroupIds: [],
+    ...fields,
+  };
 }
 
 export const sampleMenuItems: MenuItem[] = [
@@ -51,8 +91,8 @@ export const sampleMenuItems: MenuItem[] = [
       { id: "var-paneer-half", name: "Half", pricePaise: 18000 },
       { id: "var-paneer-full", name: "Full", pricePaise: 32000 },
     ],
-    addOns: [extraCheese],
-    modifierGroups: [spiceLevel],
+    addOnIds: [extraCheese.id],
+    modifierGroupIds: [spiceLevel.id],
   }),
   item({
     id: "item-chicken-tikka",
@@ -64,7 +104,7 @@ export const sampleMenuItems: MenuItem[] = [
       { id: "var-chicken-tikka-half", name: "Half", pricePaise: 22000 },
       { id: "var-chicken-tikka-full", name: "Full", pricePaise: 38000 },
     ],
-    modifierGroups: [spiceLevel],
+    modifierGroupIds: [spiceLevel.id],
   }),
   item({
     id: "item-hara-bhara",
@@ -96,8 +136,8 @@ export const sampleMenuItems: MenuItem[] = [
     categoryId: "cat-mains",
     pricePaise: 42000,
     isVeg: false,
-    addOns: [extraGravy],
-    modifierGroups: [spiceLevel],
+    addOnIds: [extraGravy.id],
+    modifierGroupIds: [spiceLevel.id],
   }),
   item({
     id: "item-dal-makhani",
@@ -105,7 +145,8 @@ export const sampleMenuItems: MenuItem[] = [
     categoryId: "cat-mains",
     pricePaise: 28000,
     isVeg: true,
-    addOns: [extraButter],
+    addOnIds: [extraButter.id],
+    modifierGroupIds: [noOnionGarlic.id],
   }),
   item({
     id: "item-paneer-butter-masala",
@@ -113,8 +154,8 @@ export const sampleMenuItems: MenuItem[] = [
     categoryId: "cat-mains",
     pricePaise: 32000,
     isVeg: true,
-    addOns: [extraGravy, extraButter],
-    modifierGroups: [spiceLevel],
+    addOnIds: [extraGravy.id, extraButter.id],
+    modifierGroupIds: [spiceLevel.id],
   }),
   item({
     id: "item-rogan-josh",
@@ -122,7 +163,7 @@ export const sampleMenuItems: MenuItem[] = [
     categoryId: "cat-mains",
     pricePaise: 52000,
     isVeg: false,
-    modifierGroups: [spiceLevel],
+    modifierGroupIds: [spiceLevel.id],
   }),
   item({
     id: "item-kadai-veg",
@@ -130,7 +171,7 @@ export const sampleMenuItems: MenuItem[] = [
     categoryId: "cat-mains",
     pricePaise: 26000,
     isVeg: true,
-    modifierGroups: [spiceLevel],
+    modifierGroupIds: [spiceLevel.id, noOnionGarlic.id],
   }),
 
   // Breads
@@ -154,7 +195,7 @@ export const sampleMenuItems: MenuItem[] = [
     categoryId: "cat-breads",
     pricePaise: 3000,
     isVeg: true,
-    addOns: [extraButter],
+    addOnIds: [extraButter.id],
   }),
   item({
     id: "item-laccha-paratha",
@@ -171,7 +212,7 @@ export const sampleMenuItems: MenuItem[] = [
     categoryId: "cat-rice",
     pricePaise: 30000,
     isVeg: true,
-    modifierGroups: [spiceLevel],
+    modifierGroupIds: [spiceLevel.id, noOnionGarlic.id],
   }),
   item({
     id: "item-chicken-biryani",
@@ -183,7 +224,7 @@ export const sampleMenuItems: MenuItem[] = [
       { id: "var-biryani-half", name: "Half", pricePaise: 24000 },
       { id: "var-biryani-full", name: "Full", pricePaise: 38000 },
     ],
-    modifierGroups: [spiceLevel],
+    modifierGroupIds: [spiceLevel.id],
   }),
   item({
     id: "item-jeera-rice",
@@ -214,19 +255,7 @@ export const sampleMenuItems: MenuItem[] = [
     categoryId: "cat-drinks",
     pricePaise: 9000,
     isVeg: true,
-    modifierGroups: [
-      {
-        id: "mod-soda",
-        name: "Taste",
-        minSelect: 1,
-        maxSelect: 1,
-        options: [
-          { id: "mod-soda-sweet", name: "Sweet", pricePaise: 0 },
-          { id: "mod-soda-salted", name: "Salted", pricePaise: 0 },
-          { id: "mod-soda-mixed", name: "Mixed", pricePaise: 0 },
-        ],
-      },
-    ],
+    modifierGroupIds: [sodaTaste.id],
   }),
   item({
     id: "item-cold-coffee",
@@ -234,7 +263,7 @@ export const sampleMenuItems: MenuItem[] = [
     categoryId: "cat-drinks",
     pricePaise: 15000,
     isVeg: true,
-    addOns: [{ id: "add-ice-cream", name: "Scoop of ice cream", pricePaise: 5000 }],
+    addOnIds: [iceCream.id],
   }),
 
   // Desserts

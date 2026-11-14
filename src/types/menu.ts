@@ -43,7 +43,13 @@ export type MenuItem = {
   pricePaise: Paise; // used when the item has no variants
   isVeg: boolean;
   isAvailable: boolean; // false = sold out today
+  /** Sizes belong to this one dish (a Half Paneer Tikka is not a Half Lassi). */
   variants: MenuItemVariant[];
-  addOns: AddOn[];
-  modifierGroups: ModifierGroup[];
+  /**
+   * Add-ons and option groups are SHARED: one "Spice level" group is used by
+   * many dishes. The dish stores only their ids, so renaming "Hot" to
+   * "Extra hot" once updates every dish that uses it.
+   */
+  addOnIds: Id[];
+  modifierGroupIds: Id[];
 };

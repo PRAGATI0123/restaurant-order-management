@@ -13,7 +13,9 @@ export function startingPrice(item: MenuItem): Paise {
 /** True if the guest has something to choose (size, add-ons or options). */
 export function hasChoices(item: MenuItem): boolean {
   return (
-    item.variants.length > 0 || item.addOns.length > 0 || item.modifierGroups.length > 0
+    item.variants.length > 0 ||
+    item.addOnIds.length > 0 ||
+    item.modifierGroupIds.length > 0
   );
 }
 

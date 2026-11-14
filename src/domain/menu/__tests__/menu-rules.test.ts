@@ -17,8 +17,8 @@ function menuItem(fields: Partial<MenuItem> & Pick<MenuItem, "name">): MenuItem 
     isVeg: true,
     isAvailable: true,
     variants: [],
-    addOns: [],
-    modifierGroups: [],
+    addOnIds: [],
+    modifierGroupIds: [],
     ...fields,
   };
 }
@@ -53,11 +53,7 @@ describe("startingPrice", () => {
 describe("hasChoices", () => {
   it("is true only when there's a size, add-on or option to pick", () => {
     expect(hasChoices(paneer)).toBe(false);
-    expect(
-      hasChoices(
-        menuItem({ name: "x", addOns: [{ id: "a", name: "Cheese", pricePaise: 1 }] }),
-      ),
-    ).toBe(true);
+    expect(hasChoices(menuItem({ name: "x", addOnIds: ["add-cheese"] }))).toBe(true);
   });
 });
 
