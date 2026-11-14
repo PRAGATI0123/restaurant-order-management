@@ -64,9 +64,12 @@ function BaseDialog({
         onClose();
       }}
       // Safety net: the browser closed it without asking (e.g. Escape pressed twice
-      // quickly, which Chrome forces through). Only report it if we still think it's open.
-      onClose={() => {
-        if (open) onClose();
+      // quickly, which Chrome forces through). Only report it if we still think it's
+      // open AND it really is closed right now. The "close" event can arrive late,
+      // after the dialog was already reopened (e.g. for another table); reacting to
+      // that stale event would wrongly close the new one.
+      onClose={(event) => {
+        if (open && !event.currentTarget.open) onClose();
       }}
       // A tap on the dark backdrop lands on the <dialog> itself, because the
       // content fills it via the inner <div>. A tap on content lands on a child.
