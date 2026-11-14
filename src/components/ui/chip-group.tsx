@@ -65,7 +65,8 @@ export function ChipGroup<T extends string>({
               <span
                 className={cn(
                   "rounded-full px-2 py-0.5 text-xs tabular-nums",
-                  selected ? "bg-primary-foreground/20" : "bg-surface-muted",
+                  // Selected: inverted colors (checked pair, ≥ 6:1 contrast in both themes)
+                  selected ? "bg-primary-foreground text-primary" : "bg-surface-muted",
                 )}
               >
                 {option.count}
