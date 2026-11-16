@@ -19,7 +19,7 @@ import { ORDER_STATUS_LABEL } from "@/domain/orders/order-state-machine";
 import { formatRupees } from "@/domain/money";
 import {
   checkStatusChange,
-  openOrderAt,
+  openOrdersAt,
   tablesJoinedTo,
 } from "@/domain/tables/table-guards";
 import { totalSeats } from "@/domain/tables/table-orders";
@@ -99,8 +99,11 @@ function SheetBody({
 
   const [mode, setMode] = useState<Mode>("overview");
   const [joining, setJoining] = useState<Id[]>([]);
+  const [movingId, setMovingId] = useState<Id>();
 
-  const order = openOrderAt(table, orders);
+  // A table can hold several open orders (a second round, or split bills).
+  const tableOrders = openOrdersAt(table, orders);
+  const moving = tableOrders.find((o) => o.id === movingId);
   const joined = tablesJoinedTo(table, tables);
   const mainTable = table.mergedIntoId
     ? tables.find((t) => t.id === table.mergedIntoId)
@@ -123,7 +126,9 @@ function SheetBody({
   }
 
   // ── Choose a free table to move the order to ──
-  if (mode === "move" && order) {
+  if (mode === "move" && moving) {
+    const order = moving;
+    const othersRemain = tableOrders.length > 1;
     return (
       <div className="flex flex-col gap-4">
         <BackButton onClick={() => setMode("overview")} />
@@ -137,7 +142,9 @@ function SheetBody({
           onPick={(target) => {
             if (tryAction(() => moveOrderToTable(order.id, target.id))) {
               toast.success(`Order ${order.number} moved to ${target.name}`, {
-                description: `${table.name} now needs cleaning.`,
+                description: othersRemain
+                  ? `${table.name} still has its other orders.`
+                  : `${table.name} now needs cleaning.`,
               });
               onClose();
             }
@@ -189,7 +196,6 @@ function SheetBody({
   }
 
   // ── Overview ──
-  const summary = order && summarizeOrder(order);
   const statusOptions = nextTableStatuses(table.status).map((to) => ({
     to,
     label: STATUS_ACTION_LABEL[`${table.status}>${to}`] ?? TABLE_STATUS_LABEL[to],
@@ -199,26 +205,45 @@ function SheetBody({
 
   return (
     <div className="flex flex-col gap-5">
-      {order && summary && (
-        <div className="flex flex-col gap-3 rounded-xl border border-border p-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="font-display text-xl font-semibold">
-              Order {order.number}
-            </span>
-            <Badge variant="primary">{ORDER_STATUS_LABEL[order.status]}</Badge>
+      {tableOrders.map((order) => {
+        const summary = summarizeOrder(order);
+        return (
+          <div
+            key={order.id}
+            className="flex flex-col gap-3 rounded-xl border border-border p-4"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="font-display text-xl font-semibold">
+                Order {order.number}
+              </span>
+              <Badge variant="primary">{ORDER_STATUS_LABEL[order.status]}</Badge>
+            </div>
+            <p className="flex flex-wrap items-baseline justify-between gap-2 text-muted-foreground">
+              <span>
+                {summary.itemCount} {summary.itemCount === 1 ? "item" : "items"} · placed{" "}
+                {timeSince(order.createdAt, now)} ago
+              </span>
+              <span className="text-xl font-semibold text-foreground tabular-nums">
+                {formatRupees(summary.totalPaise)}
+              </span>
+            </p>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <ButtonLink href={`/orders/${order.id}`} variant="secondary">
+                <Receipt aria-hidden="true" /> Open order
+              </ButtonLink>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setMovingId(order.id);
+                  setMode("move");
+                }}
+              >
+                <ArrowRightLeft aria-hidden="true" /> Move to another table
+              </Button>
+            </div>
           </div>
-          <p className="text-muted-foreground">
-            {summary.itemCount} {summary.itemCount === 1 ? "item" : "items"} · placed{" "}
-            {timeSince(order.createdAt, now)} ago
-          </p>
-          <p className="text-2xl font-semibold tabular-nums">
-            {formatRupees(summary.totalPaise)}
-          </p>
-          <ButtonLink href={`/orders/${order.id}`} variant="secondary">
-            <Receipt aria-hidden="true" /> Open order
-          </ButtonLink>
-        </div>
-      )}
+        );
+      })}
 
       {joined.length > 0 && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-surface-muted p-4">
@@ -243,32 +268,26 @@ function SheetBody({
         </div>
       )}
 
-      {!order && table.status !== "cleaning" && (
-        // No order yet: take one right here. The New order page opens with this table chosen.
-        <ButtonLink href={`/orders/new?table=${table.id}`} size="lg">
-          <Plus aria-hidden="true" /> Start order at {table.name}
-        </ButtonLink>
-      )}
-
-      {(order || table.status !== "cleaning") && (
+      {table.status !== "cleaning" && (
         <div className="grid gap-3 sm:grid-cols-2">
-          {order && (
-            <Button variant="secondary" size="lg" onClick={() => setMode("move")}>
-              <ArrowRightLeft aria-hidden="true" /> Move to another table
-            </Button>
-          )}
-          {table.status !== "cleaning" && (
-            <Button
-              variant="secondary"
-              size="lg"
-              onClick={() => {
-                setJoining([]);
-                setMode("join");
-              }}
-            >
-              <Link2 aria-hidden="true" /> Join tables
-            </Button>
-          )}
+          {/* Take an order right here: the New order page opens with this table chosen.
+              With orders already open, this is a "second round" (a new kitchen ticket). */}
+          <ButtonLink href={`/orders/new?table=${table.id}`} size="lg">
+            <Plus aria-hidden="true" />
+            {tableOrders.length > 0
+              ? "New order (another round)"
+              : `Start order at ${table.name}`}
+          </ButtonLink>
+          <Button
+            variant="secondary"
+            size="lg"
+            onClick={() => {
+              setJoining([]);
+              setMode("join");
+            }}
+          >
+            <Link2 aria-hidden="true" /> Join tables
+          </Button>
         </div>
       )}
 

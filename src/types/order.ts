@@ -73,6 +73,7 @@ export type Order = {
   /** Every status the order has been in, oldest first. Starts with "new". */
   statusHistory: OrderStatusChange[];
   cancelReason?: string; // set when status is "cancelled"
+  splitFromNumber?: number; // set when this order was split off another one
   createdBy: Id; // staff id
   createdAt: IsoDateTime;
   updatedAt: IsoDateTime;

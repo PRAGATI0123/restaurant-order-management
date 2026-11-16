@@ -7,13 +7,14 @@ import { cn } from "@/lib/utils/cn";
 import { timeSince } from "@/lib/utils/time";
 import type { Order } from "@/types/order";
 import type { RestaurantTable } from "@/types/table";
-import { summarizeOrder } from "../order-summary";
+import { summarizeOrders } from "../order-summary";
 import { TABLE_STATUS_STYLE } from "../table-style";
 import { gridPlacement } from "./floor-canvas";
 
 type TableTileProps = {
   table: RestaurantTable;
-  order?: Order;
+  /** Every open order at this table (usually one; more after a split or a second round). */
+  orders: Order[];
   /** Name of the main table, when this one is joined to it. */
   joinedToName?: string;
   now: number | null;
@@ -24,14 +25,20 @@ type TableTileProps = {
  * One table on the floor plan. The whole tile is one big button (easy to hit),
  * colored by status, and says the status in words too (not color alone).
  */
-export function TableTile({ table, order, joinedToName, now, onSelect }: TableTileProps) {
+export function TableTile({
+  table,
+  orders,
+  joinedToName,
+  now,
+  onSelect,
+}: TableTileProps) {
   const style = TABLE_STATUS_STYLE[table.status];
-  const summary = order && summarizeOrder(order);
+  const summary = orders.length > 0 ? summarizeOrders(orders) : undefined;
 
   const details = joinedToName
     ? `Joined to ${joinedToName}`
-    : order && summary
-      ? `Order ${order.number}, ${summary.itemCount} ${summary.itemCount === 1 ? "item" : "items"}, ${formatRupees(summary.totalPaise)}`
+    : summary
+      ? `${orders.length === 1 ? "Order" : "Orders"} ${summary.label}, ${summary.itemCount} ${summary.itemCount === 1 ? "item" : "items"}, ${formatRupees(summary.totalPaise)}`
       : TABLE_STATUS_LABEL[table.status];
 
   return (
@@ -59,11 +66,11 @@ export function TableTile({ table, order, joinedToName, now, onSelect }: TableTi
           <span className="flex items-center gap-1 font-semibold">
             <Link2 className="size-3.5" /> with {joinedToName}
           </span>
-        ) : order && summary ? (
+        ) : summary ? (
           <>
             <span className="truncate text-muted-foreground">
-              #{order.number}
-              {now !== null && ` · ${timeSince(order.createdAt, now)}`}
+              {summary.label}
+              {now !== null && summary.since && ` · ${timeSince(summary.since, now)}`}
             </span>
             <span className="truncate text-sm font-semibold tabular-nums">
               {formatRupees(summary.totalPaise)}

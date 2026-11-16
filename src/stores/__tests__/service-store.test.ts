@@ -132,14 +132,85 @@ describe("service store: placing orders", () => {
       store().placeOrder({
         type: "dine-in",
         items: [line],
-        tableId: "t4",
+        tableId: "t6",
         createdBy: "s",
       }),
-    ).toThrow("T4 already has order 102.");
+    ).toThrow("T6 is being cleaned.");
     expect(() =>
       store().placeOrder({ type: "dine-in", items: [line], createdBy: "s" }),
     ).toThrow(/Choose a table/);
     expect(store().orders).toBe(before.orders);
     expect(store().tables).toBe(before.tables);
+  });
+});
+
+describe("service store: changing orders", () => {
+  it("moves an order through the kitchen statuses", () => {
+    store().setOrderStatus("order-103", "preparing");
+    store().setOrderStatus("order-103", "ready");
+    expect(order("order-103").statusHistory.map((s) => s.status)).toEqual([
+      "new",
+      "preparing",
+      "ready",
+    ]);
+    expect(() => store().setOrderStatus("order-103", "new" as never)).toThrow(
+      /can't move/,
+    );
+  });
+
+  it("cancels an order or one item, with a reason", () => {
+    store().cancelOrderItem(
+      "order-101",
+      order("order-101").items[0]!.id,
+      "Guest changed mind",
+    );
+    expect(order("order-101").items[0]?.status).toBe("cancelled");
+    store().cancelOrder("order-103", "Guest left");
+    expect(order("order-103")).toMatchObject({
+      status: "cancelled",
+      cancelReason: "Guest left",
+    });
+  });
+
+  it("adds dishes to an order still in the kitchen", () => {
+    const before = order("order-101").items.length;
+    store().addItemsToOrder("order-101", [
+      { ...order("order-101").items[1]!, id: "extra", quantity: 1 }, // one more Sweet Lassi
+    ]);
+    expect(order("order-101").items).toHaveLength(before); // combined, not a new line
+    expect(order("order-101").items[1]?.quantity).toBe(3);
+  });
+
+  it("splits an order: a new order at the same table, numbers continue", () => {
+    const naanLine = order("order-102").items.find((i) => i.name === "Garlic Naan")!;
+    const created = store().splitOrder("order-102", { [naanLine.id]: 2 });
+    expect(created).toMatchObject({
+      number: 104,
+      tableIds: ["t4"],
+      splitFromNumber: 102,
+    });
+    expect(order("order-102").items.find((i) => i.name === "Garlic Naan")?.quantity).toBe(
+      2,
+    );
+  });
+
+  it("a table with two orders stays occupied when one of them moves away", () => {
+    const naanLine = order("order-102").items.find((i) => i.name === "Garlic Naan")!;
+    const split = store().splitOrder("order-102", { [naanLine.id]: 1 });
+    store().moveOrderToTable(split.id, "t5");
+    expect(table("t4").status).toBe("occupied"); // order 102 is still there
+    expect(table("t5").status).toBe("occupied");
+    store().moveOrderToTable("order-102", "t7");
+    expect(table("t4").status).toBe("cleaning"); // now empty
+  });
+
+  it("joining tables links every open order at the main table", () => {
+    const naanLine = order("order-102").items.find((i) => i.name === "Garlic Naan")!;
+    const split = store().splitOrder("order-102", { [naanLine.id]: 1 });
+    store().joinTables("t4", ["t5"]);
+    expect(order("order-102").tableIds).toEqual(["t4", "t5"]);
+    expect(order(split.id).tableIds).toEqual(["t4", "t5"]);
+    store().separateTables("t4");
+    expect(order(split.id).tableIds).toEqual(["t4"]);
   });
 });

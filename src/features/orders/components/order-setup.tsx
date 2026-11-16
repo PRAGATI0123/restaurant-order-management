@@ -2,7 +2,7 @@
 
 import { Bike, ShoppingBag, Users, Utensils, type LucideIcon } from "lucide-react";
 import { Field } from "@/components/ui/input";
-import { whyCantStartOrder } from "@/domain/tables/table-guards";
+import { openOrdersAt, whyCantStartOrder } from "@/domain/tables/table-guards";
 import { TABLE_STATUS_LABEL } from "@/domain/tables/table-state-machine";
 import { cn } from "@/lib/utils/cn";
 import { useCartStore } from "@/stores/cart-store";
@@ -65,7 +65,13 @@ function TablePicker({ error }: { error?: string }) {
     .filter((t) => !t.mergedIntoId)
     .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
   const chosen = tables.find((t) => t.id === tableId);
-  const chosenProblem = chosen && whyCantStartOrder(chosen, tables, orders);
+  const chosenProblem = chosen && whyCantStartOrder(chosen, tables);
+  // A busy table can take another order (a second round); say so, so it's not a surprise.
+  const chosenOpen = chosen ? openOrdersAt(chosen, orders) : [];
+  const chosenNote =
+    chosenOpen.length > 0
+      ? `${chosen?.name} already has order ${chosenOpen.map((o) => o.number).join(", ")}. This will be a separate order (another round).`
+      : undefined;
 
   return (
     <div className="flex flex-col gap-2">
@@ -78,7 +84,7 @@ function TablePicker({ error }: { error?: string }) {
         className="grid grid-cols-4 gap-2 sm:grid-cols-6"
       >
         {candidates.map((table) => {
-          const reason = whyCantStartOrder(table, tables, orders);
+          const reason = whyCantStartOrder(table, tables);
           const selected = table.id === tableId;
           return (
             <button
@@ -123,6 +129,11 @@ function TablePicker({ error }: { error?: string }) {
       {(error ?? chosenProblem) && (
         <p role="alert" className="text-sm font-medium text-danger">
           {chosenProblem ?? error}
+        </p>
+      )}
+      {!chosenProblem && chosenNote && (
+        <p role="status" className="text-sm text-muted-foreground">
+          {chosenNote}
         </p>
       )}
     </div>

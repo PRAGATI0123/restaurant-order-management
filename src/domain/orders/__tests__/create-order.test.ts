@@ -73,20 +73,26 @@ describe("startOrderAtTable", () => {
     ).toEqual(["t5", "t9"]);
   });
 
-  it("explains why a table can't take the order", () => {
+  it("lets a busy table take another order (second round, or separate bills)", () => {
     const t4 = makeTable({ id: "t4", name: "T4", status: "occupied" });
     const open = makeOrder({ number: 102, tableIds: ["t4"] });
-    expect(whyCantStartOrder(t4, [t4], [open])).toBe("T4 already has order 102.");
-    expect(whyCantStartOrder(makeTable({ name: "T6", status: "cleaning" }), [], [])).toBe(
+    expect(whyCantStartOrder(t4, [t4])).toBeUndefined();
+    expect(startOrderAtTable(order, t4, [t4], [open], NOW).order.tableIds).toEqual([
+      "t4",
+    ]);
+  });
+
+  it("explains why a table can't take the order", () => {
+    expect(whyCantStartOrder(makeTable({ name: "T6", status: "cleaning" }), [])).toBe(
       "T6 is being cleaned.",
     );
     const main = makeTable({ id: "t5", name: "T5" });
     const t9 = makeTable({ id: "t9", name: "T9", mergedIntoId: "t5" });
-    expect(whyCantStartOrder(t9, [main, t9], [])).toBe(
+    expect(whyCantStartOrder(t9, [main, t9])).toBe(
       "T9 is joined to T5. Start the order there.",
     );
-    expect(() => startOrderAtTable(order, t4, [t4], [open], NOW)).toThrow(
-      /already has order/,
+    expect(() => startOrderAtTable(order, t9, [main, t9], [], NOW)).toThrow(
+      /joined to T5/,
     );
   });
 

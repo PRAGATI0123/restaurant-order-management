@@ -13,3 +13,17 @@ export function timeSince(since: IsoDateTime, now: number | null): string {
   const rest = minutes % 60;
   return rest === 0 ? `${hours} h` : `${hours} h ${rest} min`;
 }
+
+const clockFormatter = new Intl.DateTimeFormat("en-IN", {
+  hour: "numeric",
+  minute: "2-digit",
+});
+
+/**
+ * "2:05 pm", in the device's own time zone. Only call this in the browser
+ * (after useNow() is not null): the server may be in another time zone, and
+ * different text on server and browser would cause a hydration error.
+ */
+export function clockTime(at: IsoDateTime): string {
+  return clockFormatter.format(new Date(at));
+}

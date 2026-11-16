@@ -8,7 +8,7 @@ import { ButtonLink } from "@/components/ui/button-link";
 import { Card } from "@/components/ui/card";
 import { ChipGroup } from "@/components/ui/chip-group";
 import { formatRupees } from "@/domain/money";
-import { openOrderAt } from "@/domain/tables/table-guards";
+import { openOrdersAt } from "@/domain/tables/table-guards";
 import { TABLE_STATUS_LABEL } from "@/domain/tables/table-state-machine";
 import { useNow } from "@/lib/hooks/use-now";
 import { cn } from "@/lib/utils/cn";
@@ -16,7 +16,7 @@ import { timeSince } from "@/lib/utils/time";
 import { useServiceStore } from "@/stores/service-store";
 import type { Id } from "@/types/common";
 import type { RestaurantTable } from "@/types/table";
-import { summarizeOrder } from "../order-summary";
+import { summarizeOrders } from "../order-summary";
 import { STATUS_ORDER, TABLE_STATUS_STYLE } from "../table-style";
 import { FloorCanvas } from "./floor-canvas";
 import { TableSheet } from "./table-sheet";
@@ -96,7 +96,7 @@ export function TablesScreen() {
             <TableTile
               key={table.id}
               table={table}
-              order={openOrderAt(table, orders)}
+              orders={openOrdersAt(table, orders)}
               joinedToName={
                 table.mergedIntoId ? nameOf.get(table.mergedIntoId) : undefined
               }
@@ -109,8 +109,8 @@ export function TablesScreen() {
         <Card>
           <ul className="divide-y divide-border">
             {sortedForList.map((table) => {
-              const order = openOrderAt(table, orders);
-              const summary = order && summarizeOrder(order);
+              const open = openOrdersAt(table, orders);
+              const summary = open.length > 0 ? summarizeOrders(open) : undefined;
               const style = TABLE_STATUS_STYLE[table.status];
               return (
                 <li key={table.id}>
@@ -128,10 +128,10 @@ export function TablesScreen() {
                         {table.mergedIntoId &&
                           ` · joined to ${nameOf.get(table.mergedIntoId)}`}
                       </span>
-                      {order && summary && (
+                      {summary && (
                         <span className="text-sm font-semibold">
-                          Order {order.number} · {formatRupees(summary.totalPaise)} ·{" "}
-                          {timeSince(order.createdAt, now)}
+                          {summary.label} · {formatRupees(summary.totalPaise)}
+                          {summary.since && ` · ${timeSince(summary.since, now)}`}
                         </span>
                       )}
                     </span>
