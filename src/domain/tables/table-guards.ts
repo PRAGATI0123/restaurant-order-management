@@ -1,3 +1,4 @@
+import type { IsoDateTime } from "@/types/common";
 import type { Order } from "@/types/order";
 import type { RestaurantTable, TableStatus } from "@/types/table";
 import { DomainError } from "../errors";
@@ -92,4 +93,51 @@ export function assertCanDeleteTable(
   if (openOrderAt(table, orders)) {
     throw new DomainError(`${table.name} has an open order.`);
   }
+}
+
+/** Why a table can't take a new order right now, or undefined if it can. */
+export function whyCantStartOrder(
+  table: RestaurantTable,
+  tables: RestaurantTable[],
+  orders: Order[],
+): string | undefined {
+  if (table.mergedIntoId) {
+    const main = tables.find((t) => t.id === table.mergedIntoId);
+    return `${table.name} is joined to ${main?.name ?? "another table"}. Start the order there.`;
+  }
+  if (table.status === "cleaning") return `${table.name} is being cleaned.`;
+  const order = openOrderAt(table, orders);
+  if (order) return `${table.name} already has order ${order.number}.`;
+  return undefined;
+}
+
+/**
+ * START A DINE-IN ORDER AT A TABLE. Allowed when the table is:
+ *  - Available or Reserved (guests arriving), or
+ *  - Occupied but with no open order yet (guests were seated first, ordering now).
+ * Not allowed: being cleaned, joined to another table, or already has an order.
+ *
+ * The order is linked to the table AND every table joined to it, so later rules
+ * (move, separate) see the whole group. The table becomes Occupied.
+ */
+export function startOrderAtTable(
+  order: Order,
+  table: RestaurantTable,
+  tables: RestaurantTable[],
+  orders: Order[],
+  at: IsoDateTime,
+): { order: Order; table: RestaurantTable } {
+  if (order.type !== "dine-in") {
+    throw new DomainError(
+      `Order ${order.number} is ${order.type}; it doesn't use a table.`,
+    );
+  }
+  const reason = whyCantStartOrder(table, tables, orders);
+  if (reason) throw new DomainError(reason);
+
+  const joinedIds = tablesJoinedTo(table, tables).map((t) => t.id);
+  return {
+    order: { ...order, tableIds: [table.id, ...joinedIds], updatedAt: at },
+    table: { ...table, status: "occupied" },
+  };
 }

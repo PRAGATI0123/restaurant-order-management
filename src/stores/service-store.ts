@@ -1,16 +1,29 @@
 import { create } from "zustand";
 import { DomainError } from "@/domain/errors";
+import { createOrder, nextOrderNumber } from "@/domain/orders/create-order";
 import {
   openOrderAt,
   changeStatusSafely,
+  startOrderAtTable,
   tablesJoinedTo,
 } from "@/domain/tables/table-guards";
 import { mergeTables, transferOrder, unmergeTables } from "@/domain/tables/table-orders";
+import { newId } from "@/lib/utils/id";
 import { sampleOrders } from "@/mocks/data/orders";
 import { sampleTables } from "@/mocks/data/tables";
 import type { Id } from "@/types/common";
-import type { Order } from "@/types/order";
+import type { DeliveryDetails, Order, OrderItem, OrderType } from "@/types/order";
 import type { RestaurantTable, TableStatus } from "@/types/table";
+
+/** Everything the New order screen sends when "Send to kitchen" is tapped. */
+export type PlaceOrderInput = {
+  type: OrderType;
+  items: OrderItem[];
+  tableId?: Id;
+  customerName?: string;
+  delivery?: DeliveryDetails;
+  createdBy: Id;
+};
 
 /** What the floor plan editor saves: where tables are and what they look like. */
 export type TableLayout = Pick<
@@ -22,6 +35,7 @@ type ServiceState = {
   tables: RestaurantTable[];
   orders: Order[];
 
+  placeOrder: (input: PlaceOrderInput) => Order;
   setTableStatus: (tableId: Id, to: TableStatus) => void;
   moveOrderToTable: (orderId: Id, toTableId: Id) => void;
   joinTables: (mainTableId: Id, joiningIds: Id[]) => void;
@@ -61,6 +75,36 @@ function replaceAll<T extends { id: Id }>(list: T[], updated: T[]): T[] {
 export const useServiceStore = create<ServiceState>()((set, get) => ({
   tables: sampleTables,
   orders: sampleOrders,
+
+  placeOrder: ({ tableId, ...input }) => {
+    const { tables, orders } = get();
+    const at = now();
+    const order = createOrder({
+      ...input,
+      id: newId("order"),
+      number: nextOrderNumber(orders),
+      at,
+    });
+
+    if (order.type !== "dine-in") {
+      set({ orders: [...orders, order] });
+      return order;
+    }
+    if (!tableId) throw new DomainError("Choose a table for this dine-in order.");
+    // New order + its table, saved together (or neither, if a rule says no).
+    const seated = startOrderAtTable(
+      order,
+      mustFind(tables, tableId, "table"),
+      tables,
+      orders,
+      at,
+    );
+    set({
+      orders: [...orders, seated.order],
+      tables: replaceAll(tables, [seated.table]),
+    });
+    return seated.order;
+  },
 
   setTableStatus: (tableId, to) => {
     const { tables, orders } = get();

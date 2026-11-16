@@ -66,6 +66,7 @@ export type Order = {
   type: OrderType;
   status: OrderStatus;
   tableIds: Id[]; // dine-in only; more than one when tables are merged
+  customerName?: string; // takeaway: the name called out at the counter
   delivery?: DeliveryDetails; // delivery only
   items: OrderItem[];
   discount?: Discount;

@@ -81,3 +81,65 @@ describe("service store", () => {
     expect(table("t6").status).toBe("cleaning");
   });
 });
+
+describe("service store: placing orders", () => {
+  const line = {
+    id: "line-1",
+    menuItemId: "item-butter-naan",
+    name: "Butter Naan",
+    unitPricePaise: 6000,
+    addOns: [],
+    modifiers: [],
+    quantity: 2,
+    status: "active" as const,
+  };
+
+  it("places a dine-in order at a free table: new number, table occupied", () => {
+    const order = store().placeOrder({
+      type: "dine-in",
+      items: [line],
+      tableId: "t5",
+      createdBy: "staff-1",
+    });
+    expect(order).toMatchObject({ number: 104, status: "new", tableIds: ["t5"] });
+    expect(store().orders.at(-1)?.id).toBe(order.id);
+    expect(table("t5").status).toBe("occupied");
+  });
+
+  it("places takeaway and delivery orders without a table", () => {
+    const takeaway = store().placeOrder({
+      type: "takeaway",
+      items: [line],
+      createdBy: "s",
+    });
+    const delivery = store().placeOrder({
+      type: "delivery",
+      items: [line],
+      delivery: {
+        customerName: "Asha",
+        phone: "9876543210",
+        address: "12 MG Road, Bengaluru",
+      },
+      createdBy: "s",
+    });
+    expect([takeaway.number, delivery.number]).toEqual([104, 105]);
+    expect(delivery.tableIds).toEqual([]);
+  });
+
+  it("changes nothing when the table can't take the order", () => {
+    const before = store();
+    expect(() =>
+      store().placeOrder({
+        type: "dine-in",
+        items: [line],
+        tableId: "t4",
+        createdBy: "s",
+      }),
+    ).toThrow("T4 already has order 102.");
+    expect(() =>
+      store().placeOrder({ type: "dine-in", items: [line], createdBy: "s" }),
+    ).toThrow(/Choose a table/);
+    expect(store().orders).toBe(before.orders);
+    expect(store().tables).toBe(before.tables);
+  });
+});
