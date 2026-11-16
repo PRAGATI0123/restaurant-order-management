@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils/cn";
 import { useCartStore } from "@/stores/cart-store";
 import { useMenuStore } from "@/stores/menu-store";
 import type { MenuItem } from "@/types/menu";
+import type { OrderItem } from "@/types/order";
 import { VegMark } from "@/features/menu/components/veg-mark";
 
 /**
@@ -24,10 +25,18 @@ import { VegMark } from "@/features/menu/components/veg-mark";
  * Sold-out dishes are shown (so staff can tell the guest) but can't be tapped.
  * A small number on a tile shows how many are already in this order.
  */
-export function MenuBrowser({ onPick }: { onPick: (item: MenuItem) => void }) {
+export function MenuBrowser({
+  onPick,
+  lines: linesOverride,
+}: {
+  onPick: (item: MenuItem) => void;
+  /** Lines to count on the tiles. Default: the cart. (Adding to an existing order passes its lines.) */
+  lines?: OrderItem[];
+}) {
   const items = useMenuStore((s) => s.items);
   const categories = useMenuStore((s) => s.categories);
-  const lines = useCartStore((s) => s.lines);
+  const cartLines = useCartStore((s) => s.lines);
+  const lines = linesOverride ?? cartLines;
 
   const [query, setQuery] = useState("");
   const [categoryId, setCategoryId] = useState<string>("all");

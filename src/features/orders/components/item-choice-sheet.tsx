@@ -23,14 +23,17 @@ import { tryAction } from "@/lib/utils/try-action";
 import { useCartStore } from "@/stores/cart-store";
 import { useMenuStore } from "@/stores/menu-store";
 import type { MenuItem, ModifierGroup } from "@/types/menu";
+import type { OrderItem } from "@/types/order";
 
 type ItemChoiceSheetProps = {
   item: MenuItem | undefined;
   onClose: () => void;
+  /** Where the dish goes. Default: the cart. (The order page adds straight to an order.) */
+  onAdd?: (line: OrderItem) => void;
 };
 
 /** The sheet that asks "which size? spice level? any extras?" before adding a dish. */
-export function ItemChoiceSheet({ item, onClose }: ItemChoiceSheetProps) {
+export function ItemChoiceSheet({ item, onClose, onAdd }: ItemChoiceSheetProps) {
   return (
     <BottomSheet
       open={item !== undefined}
@@ -39,12 +42,20 @@ export function ItemChoiceSheet({ item, onClose }: ItemChoiceSheetProps) {
       description="Choose how the guest wants it."
     >
       {/* key: fresh choices every time a dish is opened */}
-      {item && <ChoiceForm key={item.id} item={item} onDone={onClose} />}
+      {item && <ChoiceForm key={item.id} item={item} onDone={onClose} onAdd={onAdd} />}
     </BottomSheet>
   );
 }
 
-function ChoiceForm({ item, onDone }: { item: MenuItem; onDone: () => void }) {
+function ChoiceForm({
+  item,
+  onDone,
+  onAdd,
+}: {
+  item: MenuItem;
+  onDone: () => void;
+  onAdd?: (line: OrderItem) => void;
+}) {
   const addOns = useMenuStore((s) => s.addOns);
   const modifierGroups = useMenuStore((s) => s.modifierGroups);
   const addLine = useCartStore((s) => s.addLine);
@@ -71,7 +82,7 @@ function ChoiceForm({ item, onDone }: { item: MenuItem; onDone: () => void }) {
 
   function add() {
     const added = tryAction(() =>
-      addLine(buildOrderItem(item, choices, catalog, newId("line"))),
+      (onAdd ?? addLine)(buildOrderItem(item, choices, catalog, newId("line"))),
     );
     if (added) {
       toast.success(`${choices.quantity} × ${item.name} added`);
