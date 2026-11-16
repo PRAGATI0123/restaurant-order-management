@@ -52,7 +52,6 @@ export function makeTable(overrides: Partial<RestaurantTable> = {}): RestaurantT
     id,
     name: overrides.name ?? id.toUpperCase(),
     seats: 4,
-    shape: "square",
     status: "available",
     x: 0,
     y: 0,

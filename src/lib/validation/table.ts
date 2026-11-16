@@ -1,6 +1,5 @@
 import { z } from "zod";
 import type { Id } from "@/types/common";
-import type { TableShape } from "@/types/table";
 import { firstErrors, nameField, sameName, type Result } from "./shared";
 
 export const MAX_SEATS = 12;
@@ -13,10 +12,9 @@ const tableSchema = z.object({
     .regex(/^\d+$/, "Enter a whole number of seats.")
     .transform(Number)
     .refine((n) => n >= 1 && n <= MAX_SEATS, `Seats must be from 1 to ${MAX_SEATS}.`),
-  shape: z.enum(["square", "round"]),
 });
 
-export type TableFormValues = { name: string; seats: string; shape: TableShape };
+export type TableFormValues = { name: string; seats: string };
 export type TableFormData = z.output<typeof tableSchema>;
 
 /** Checks the add/edit table form. Two tables can't share a name ("T4"). */

@@ -2,14 +2,12 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ChipGroup } from "@/components/ui/chip-group";
 import { Dialog, DialogFooter } from "@/components/ui/dialog";
 import { Field } from "@/components/ui/input";
-import { canPlace, findFreeSpot } from "@/domain/tables/layout";
+import { findFreeSpot } from "@/domain/tables/layout";
 import { newId } from "@/lib/utils/id";
 import { validateTable, type TableFormValues } from "@/lib/validation/table";
 import type { TableLayout } from "@/stores/service-store";
-import type { TableShape } from "@/types/table";
 
 type TableFormDialogProps = {
   open: boolean;
@@ -22,7 +20,7 @@ type TableFormDialogProps = {
   onSave: (table: TableLayout) => void;
 };
 
-/** Add a table, or change a table's name, seats or shape. */
+/** Add a table, or change a table's name or seats. Every table is round and the same size. */
 export function TableFormDialog({
   open,
   onClose,
@@ -33,7 +31,6 @@ export function TableFormDialog({
   const [values, setValues] = useState<TableFormValues>(() => ({
     name: table?.name ?? suggestName(draft),
     seats: String(table?.seats ?? 4),
-    shape: table?.shape ?? "square",
   }));
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -49,24 +46,17 @@ export function TableFormDialog({
       setErrors(result.errors);
       return;
     }
-    const { name, seats, shape } = result.data;
+    const { name, seats } = result.data;
 
     if (table) {
-      // More seats = a bigger table. Check it still fits where it stands.
-      if (!canPlace(draft, { ...table, seats })) {
-        setErrors({
-          seats: `Not enough room here for ${seats} seats. Move the table first, or choose fewer.`,
-        });
-        return;
-      }
-      onSave({ ...table, name, seats, shape });
+      onSave({ ...table, name, seats }); // same size whatever the seats, so it still fits
     } else {
-      const spot = findFreeSpot(draft, seats);
+      const spot = findFreeSpot(draft);
       if (!spot) {
-        setErrors({ seats: "There's no free space for a table this size." });
+        setErrors({ name: "The floor is full. Move or remove a table to make room." });
         return;
       }
-      onSave({ id: newId("table"), name, seats, shape, ...spot });
+      onSave({ id: newId("table"), name, seats, ...spot });
     }
     onClose();
   }
@@ -90,24 +80,10 @@ export function TableFormDialog({
           value={values.seats}
           onChange={(e) => update("seats", e.target.value)}
           error={errors.seats}
-          hint="1–4 seats: small table · 5–6: medium · 7–12: large"
+          hint="From 1 to 12. All tables are the same size on the floor plan."
           inputMode="numeric"
           autoComplete="off"
         />
-        <div className="flex flex-col gap-1.5">
-          <span className="text-sm font-semibold" aria-hidden="true">
-            Shape
-          </span>
-          <ChipGroup<TableShape>
-            label="Shape"
-            value={values.shape}
-            onChange={(shape) => update("shape", shape)}
-            options={[
-              { value: "square", label: "Square" },
-              { value: "round", label: "Round" },
-            ]}
-          />
-        </div>
         <DialogFooter className="mt-2">
           <Button variant="secondary" onClick={onClose}>
             Cancel

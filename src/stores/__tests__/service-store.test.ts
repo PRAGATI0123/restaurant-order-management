@@ -53,17 +53,12 @@ describe("service store", () => {
   });
 
   it("saves a layout: keeps live statuses, adds new tables as Available", () => {
-    const layout = store().tables.map(({ id, name, seats, shape, x, y }) =>
-      id === "t1"
-        ? { id, name: "W1", seats, shape, x: 2, y: 4 }
-        : { id, name, seats, shape, x, y },
+    const layout = store().tables.map(({ id, name, seats, x, y }) =>
+      id === "t1" ? { id, name: "W1", seats, x: 9, y: 6 } : { id, name, seats, x, y },
     );
-    store().saveLayout([
-      ...layout,
-      { id: "t12", name: "T12", seats: 2, shape: "round", x: 10, y: 6 },
-    ]);
+    store().saveLayout([...layout, { id: "t12", name: "T12", seats: 2, x: 0, y: 0 }]);
 
-    expect(table("t1")).toMatchObject({ name: "W1", x: 2, y: 4, status: "available" });
+    expect(table("t1")).toMatchObject({ name: "W1", x: 9, y: 6, status: "available" });
     expect(table("t4").status).toBe("occupied");
     expect(table("t12").status).toBe("available");
   });

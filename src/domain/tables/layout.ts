@@ -5,11 +5,9 @@ import { DomainError } from "../errors";
 /**
  * THE FLOOR PLAN GRID
  *
- * The room is a grid of 12 columns × 8 rows. Every table covers a rectangle of
- * cells ("footprint") that depends on its seats. Positions (x, y) are the
- * table's top-left cell, counted from 0.
- *
- *  1–4 seats → 2×2 cells   5–6 seats → 3×2   7+ seats → 4×2
+ * The room is a grid of 12 columns × 8 rows of square cells. Every table is
+ * the same size: a round table covering 2 × 2 cells, whatever its number of
+ * seats. Positions (x, y) are the table's top-left cell, counted from 0.
  *
  * Using whole cells (not pixels) means the plan looks the same on a phone and
  * on a big screen, and two tables can never half-overlap.
@@ -17,35 +15,27 @@ import { DomainError } from "../errors";
 export const FLOOR_COLUMNS = 12;
 export const FLOOR_ROWS = 8;
 
-export type Footprint = { width: number; height: number };
+/** Every table covers TABLE_SIZE × TABLE_SIZE cells. */
+export const TABLE_SIZE = 2;
 
-export function footprint(seats: number): Footprint {
-  if (seats <= 4) return { width: 2, height: 2 };
-  if (seats <= 6) return { width: 3, height: 2 };
-  return { width: 4, height: 2 };
-}
-
-type Placed = Pick<RestaurantTable, "id" | "seats" | "x" | "y">;
+type Placed = Pick<RestaurantTable, "id" | "x" | "y">;
 
 /** True if two placed tables share at least one cell. */
 function overlaps(a: Placed, b: Placed): boolean {
-  const fa = footprint(a.seats);
-  const fb = footprint(b.seats);
   return (
-    a.x < b.x + fb.width &&
-    b.x < a.x + fa.width &&
-    a.y < b.y + fb.height &&
-    b.y < a.y + fa.height
+    a.x < b.x + TABLE_SIZE &&
+    b.x < a.x + TABLE_SIZE &&
+    a.y < b.y + TABLE_SIZE &&
+    b.y < a.y + TABLE_SIZE
   );
 }
 
 function insideFloor(table: Placed): boolean {
-  const { width, height } = footprint(table.seats);
   return (
     table.x >= 0 &&
     table.y >= 0 &&
-    table.x + width <= FLOOR_COLUMNS &&
-    table.y + height <= FLOOR_ROWS
+    table.x + TABLE_SIZE <= FLOOR_COLUMNS &&
+    table.y + TABLE_SIZE <= FLOOR_ROWS
   );
 }
 
@@ -61,14 +51,29 @@ export function canPlace(tables: Placed[], candidate: Placed): boolean {
   );
 }
 
-/** The first free spot for a table with this many seats, scanning row by row. */
-export function findFreeSpot(
-  tables: Placed[],
-  seats: number,
-): { x: number; y: number } | undefined {
+/**
+ * The neat layout: a table every 3 cells (2 for the table + 1 gap), so new
+ * tables line up in tidy rows with walking space between them.
+ */
+export const TABLE_PITCH = TABLE_SIZE + 1;
+
+/**
+ * Where a new table should go.
+ * 1st choice: the first free spot in the neat rows (x = 0, 3, 6, 9; y = 0, 3, 6).
+ * 2nd choice: any free spot at all, scanning row by row.
+ * undefined = the room is full.
+ */
+export function findFreeSpot(tables: Placed[]): { x: number; y: number } | undefined {
+  const fits = (x: number, y: number) => canPlace(tables, { id: "__new__", x, y });
+
+  for (let y = 0; y < FLOOR_ROWS; y += TABLE_PITCH) {
+    for (let x = 0; x < FLOOR_COLUMNS; x += TABLE_PITCH) {
+      if (fits(x, y)) return { x, y };
+    }
+  }
   for (let y = 0; y < FLOOR_ROWS; y++) {
     for (let x = 0; x < FLOOR_COLUMNS; x++) {
-      if (canPlace(tables, { id: "__new__", seats, x, y })) return { x, y };
+      if (fits(x, y)) return { x, y };
     }
   }
   return undefined;

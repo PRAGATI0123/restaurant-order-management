@@ -3,9 +3,9 @@ import { makeOrder, makeTable } from "@/domain/__tests__/test-data";
 import {
   FLOOR_COLUMNS,
   FLOOR_ROWS,
+  TABLE_SIZE,
   canPlace,
   findFreeSpot,
-  footprint,
   moveTableTo,
 } from "@/domain/tables/layout";
 import {
@@ -15,14 +15,12 @@ import {
   openOrderAt,
 } from "@/domain/tables/table-guards";
 
-describe("footprint", () => {
-  it.each([
-    [2, 2],
-    [4, 2],
-    [6, 3],
-    [8, 4],
-  ])("%i seats → %i cells wide, 2 tall", (seats, width) => {
-    expect(footprint(seats)).toEqual({ width, height: 2 });
+describe("table size", () => {
+  it("is the same for every table, whatever its seats (2 × 2 cells)", () => {
+    expect(TABLE_SIZE).toBe(2);
+    // An 8-seat table takes no more room than a 2-seat one:
+    const big = makeTable({ id: "big", seats: 8, x: 0, y: 0 });
+    expect(canPlace([big], makeTable({ id: "small", seats: 2, x: 2, y: 0 }))).toBe(true);
   });
 });
 
@@ -49,16 +47,29 @@ describe("canPlace", () => {
 });
 
 describe("findFreeSpot and moveTableTo", () => {
-  it("finds the first free spot, row by row", () => {
+  it("puts a new table in the neat rows first (a 1-cell gap between tables)", () => {
     const t1 = makeTable({ id: "t1", x: 0, y: 0 });
-    expect(findFreeSpot([t1], 4)).toEqual({ x: 2, y: 0 });
+    expect(findFreeSpot([t1])).toEqual({ x: 3, y: 0 });
+  });
+
+  it("uses any free gap once the neat rows are full", () => {
+    // Fill every neat spot: x = 0, 3, 6, 9 and y = 0, 3, 6 (12 tables).
+    const neat = [0, 3, 6].flatMap((y) =>
+      [0, 3, 6, 9].map((x) => makeTable({ id: `n${x}-${y}`, x, y })),
+    );
+    expect(findFreeSpot(neat)).toBeUndefined(); // the 1-cell gaps are too small
+
+    // Someone dragged the last table off the neat spot, from x = 9 to x = 10.
+    // No neat spot is free now, but a gap opened up at x = 8:
+    const shifted = neat.map((t) => (t.id === "n9-6" ? { ...t, x: 10 } : t));
+    expect(findFreeSpot(shifted)).toEqual({ x: 8, y: 5 });
   });
 
   it("says when the room is full", () => {
     const full = Array.from({ length: (FLOOR_COLUMNS / 2) * (FLOOR_ROWS / 2) }, (_, i) =>
       makeTable({ id: `t${i}`, x: (i % 6) * 2, y: Math.floor(i / 6) * 2 }),
     );
-    expect(findFreeSpot(full, 2)).toBeUndefined();
+    expect(findFreeSpot(full)).toBeUndefined();
   });
 
   it("moves a table, or explains why it can't", () => {

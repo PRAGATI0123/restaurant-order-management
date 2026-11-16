@@ -36,14 +36,13 @@ import { tryAction } from "@/lib/utils/try-action";
 import { useServiceStore, type TableLayout } from "@/stores/service-store";
 import type { Id } from "@/types/common";
 import type { RestaurantTable } from "@/types/table";
-import { FloorCanvas, gridPlacement } from "./floor-canvas";
+import { FloorCanvas, TableCircle, gridPlacement } from "./floor-canvas";
 import { TableFormDialog } from "./table-form-dialog";
 
-const toLayout = ({ id, name, seats, shape, x, y }: RestaurantTable): TableLayout => ({
+const toLayout = ({ id, name, seats, x, y }: RestaurantTable): TableLayout => ({
   id,
   name,
   seats,
-  shape,
   x,
   y,
 });
@@ -194,8 +193,7 @@ export function FloorEditor() {
             <div className="min-w-32">
               <p className="font-display text-2xl font-semibold">{selected.name}</p>
               <p className="flex items-center gap-1 text-sm text-muted-foreground">
-                <Users className="size-4" aria-hidden="true" /> {selected.seats} seats ·{" "}
-                {selected.shape}
+                <Users className="size-4" aria-hidden="true" /> {selected.seats} seats
               </p>
             </div>
             <div className="flex items-center gap-1" role="group" aria-label="Move table">
@@ -304,17 +302,26 @@ function DraggableTable({
           : undefined,
       }}
       className={cn(
-        // touch-none: the finger drags the table instead of scrolling the page
-        "flex touch-none flex-col justify-between border-2 bg-surface p-3 text-left shadow-sm select-none",
-        table.shape === "round" ? "rounded-[2rem]" : "rounded-xl",
-        selected ? "border-primary ring-4 ring-primary/30" : "border-wood/60",
-        isDragging ? "z-10 cursor-grabbing opacity-90 shadow-xl" : "cursor-grab",
+        // touch-none: the finger drags the table instead of scrolling the page.
+        // [container-type:size] lets the circle size itself to this space.
+        "group [container-type:size] flex touch-none items-center justify-center rounded-full select-none focus-visible:outline-none",
+        isDragging ? "z-10 cursor-grabbing" : "cursor-grab",
       )}
     >
-      <span className="font-display text-xl font-semibold">{table.name}</span>
-      <span className="flex items-center gap-1 text-xs text-muted-foreground">
-        <Users className="size-3.5" aria-hidden="true" /> {table.seats}
-      </span>
+      <TableCircle
+        className={cn(
+          "group-focus-visible:ring-4 group-focus-visible:ring-ring",
+          selected ? "border-primary ring-4 ring-primary/30" : "border-wood/60",
+          isDragging && "opacity-90 shadow-xl",
+        )}
+      >
+        <span className="font-display text-xl leading-none font-semibold">
+          {table.name}
+        </span>
+        <span className="flex items-center gap-1 text-xs text-muted-foreground">
+          <Users className="size-3.5" aria-hidden="true" /> {table.seats}
+        </span>
+      </TableCircle>
     </button>
   );
 }

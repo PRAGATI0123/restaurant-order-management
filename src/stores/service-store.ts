@@ -36,10 +36,7 @@ export type PlaceOrderInput = {
 };
 
 /** What the floor plan editor saves: where tables are and what they look like. */
-export type TableLayout = Pick<
-  RestaurantTable,
-  "id" | "name" | "seats" | "shape" | "x" | "y"
->;
+export type TableLayout = Pick<RestaurantTable, "id" | "name" | "seats" | "x" | "y">;
 
 type ServiceState = {
   tables: RestaurantTable[];
@@ -233,9 +230,9 @@ export const useServiceStore = create<ServiceState>()((set, get) => {
           // New tables start Available. Tables left out of the layout were removed.
           // Copy ONLY the layout fields, by name. Even if a caller passes objects
           // with extra fields (like a status), they can't change live data.
-          tables: layout.map(({ id, name, seats, shape, x, y }) => {
+          tables: layout.map(({ id, name, seats, x, y }) => {
             const existing = current.get(id);
-            const placed = { name, seats, shape, x, y };
+            const placed = { name, seats, x, y };
             return existing
               ? { ...existing, ...placed }
               : { id, ...placed, status: "available" as const };
