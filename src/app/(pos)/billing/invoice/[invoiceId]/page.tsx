@@ -1,27 +1,20 @@
-import { FileText } from "lucide-react";
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { PagePlaceholder } from "@/components/layout/page-placeholder";
-import { PageHeader } from "@/components/layout/page-header";
+import { Skeleton } from "@/components/ui/skeleton";
+import { InvoiceScreen } from "@/features/billing/components/invoice-screen";
 
 export const metadata: Metadata = { title: "Invoice" };
 
-// Route: /billing/invoice/[invoiceId]  e.g. /billing/invoice/demo-inv-1
+// Route: /billing/invoice/[invoiceId]  e.g. /billing/invoice/inv-1003-1
+// `params` is a Promise in Next.js 16: read inside <Suspense> (Cache Components).
 export default function InvoicePage({
   params,
 }: PageProps<"/billing/invoice/[invoiceId]">) {
   return (
-    <>
-      <PageHeader
-        title="Invoice"
-        description={
-          <Suspense fallback="Loading invoice…">
-            {params.then(({ invoiceId }) => `Printable invoice ${invoiceId}.`)}
-          </Suspense>
-        }
-        back={{ href: "/billing", label: "Back to billing" }}
-      />
-      <PagePlaceholder icon={FileText} step={16} />
-    </>
+    <Suspense fallback={<Skeleton className="h-[70vh] w-full" />}>
+      {params.then(({ invoiceId }) => (
+        <InvoiceScreen invoiceId={invoiceId} />
+      ))}
+    </Suspense>
   );
 }

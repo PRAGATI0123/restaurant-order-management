@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { DEFAULT_TAX_RATE_BASIS_POINTS } from "@/config/constants";
 import { calculateBill } from "@/domain/billing/calculate-bill";
+import { isOrderOpen } from "@/domain/orders/order-state-machine";
 import { canPlace } from "@/domain/tables/layout";
 import { useServiceStore } from "@/stores/service-store";
 
@@ -16,7 +17,7 @@ describe("sample floor", () => {
   it("has no overlapping tables, and every open order sits at an occupied table", () => {
     const { tables, orders } = store();
     for (const t of tables) expect(canPlace(tables, t)).toBe(true);
-    for (const o of orders) {
+    for (const o of orders.filter((order) => isOrderOpen(order.status))) {
       for (const id of o.tableIds) expect(table(id).status).toBe("occupied");
     }
   });
@@ -230,9 +231,11 @@ describe("billing", () => {
 
     expect(order("order-102").status).toBe("paid");
     expect(table("t4").status).toBe("cleaning");
-    expect(invoice).toMatchObject({ number: 1001, where: "T4", totalPaise: total });
-    expect(store().invoices).toEqual([invoice]);
-    expect(store().payments.map((p) => [p.method, p.invoiceId])).toEqual([
+    // The sample day already has INV-1001 to INV-1006, so this one is next.
+    expect(invoice).toMatchObject({ number: 1007, where: "T4", totalPaise: total });
+    expect(store().invoices.at(-1)).toEqual(invoice);
+    const mine = store().payments.filter((p) => p.orderId === "order-102");
+    expect(mine.map((p) => [p.method, p.invoiceId])).toEqual([
       ["cash", invoice.id],
       ["upi", invoice.id],
     ]);
@@ -274,6 +277,20 @@ describe("billing", () => {
     const second = store().settleOrder("order-105", [
       { method: "cash", amountPaise: totalOf("order-105") },
     ]);
-    expect(second.number).toBe(1002);
+    expect(second.number).toBe(1008);
+  });
+});
+
+describe("sample day", () => {
+  it("starts with six bills paid earlier today, each paid in full", () => {
+    const { orders, payments, invoices } = store();
+    expect(invoices.map((i) => i.number)).toEqual([1001, 1002, 1003, 1004, 1005, 1006]);
+    for (const invoice of invoices) {
+      expect(orders.find((o) => o.id === invoice.orderId)?.status).toBe("paid");
+      const paid = payments
+        .filter((p) => invoice.paymentIds.includes(p.id))
+        .reduce((sum, p) => sum + p.amountPaise, 0);
+      expect(paid).toBe(invoice.totalPaise);
+    }
   });
 });

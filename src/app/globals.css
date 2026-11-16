@@ -156,3 +156,21 @@ body {
   outline: 2px solid var(--ring);
   outline-offset: 2px;
 }
+
+/*
+ * Printing (invoices): always black on white, whatever the screen theme.
+ * Paper doesn't have a dark mode, and most printers skip background colors,
+ * so light text from dark mode would print almost invisible.
+ */
+@media print {
+  :root,
+  .dark {
+    --background: #ffffff;
+    --surface: #ffffff;
+    --surface-muted: #f2f2f2;
+    --border: #c8c8c8;
+    --foreground: #000000;
+    --muted-foreground: #444444;
+    --success: #1f6b12;
+  }
+}

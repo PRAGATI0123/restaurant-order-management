@@ -4,6 +4,7 @@ import {
   Check,
   ChefHat,
   ClipboardList,
+  FileText,
   HandPlatter,
   Plus,
   Receipt,
@@ -21,6 +22,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { DEFAULT_TAX_RATE_BASIS_POINTS } from "@/config/constants";
 import { calculateBill, itemUnitTotal } from "@/domain/billing/calculate-bill";
+import { invoiceLabel } from "@/domain/billing/checkout";
 import { canAddItems } from "@/domain/orders/order-changes";
 import {
   ORDER_STATUS_LABEL,
@@ -60,6 +62,7 @@ export function OrderDetailScreen({ orderId }: { orderId: Id }) {
   const setOrderStatus = useServiceStore((s) => s.setOrderStatus);
   const cancelOrder = useServiceStore((s) => s.cancelOrder);
   const cancelOrderItem = useServiceStore((s) => s.cancelOrderItem);
+  const invoice = useServiceStore((s) => s.invoices.find((i) => i.orderId === orderId));
   const now = useNow();
 
   const [adding, setAdding] = useState(false);
@@ -135,6 +138,15 @@ export function OrderDetailScreen({ orderId }: { orderId: Id }) {
                 variant={next ? "secondary" : "primary"}
               >
                 <Receipt aria-hidden="true" /> Checkout
+              </ButtonLink>
+            )}
+            {invoice && (
+              <ButtonLink
+                href={`/billing/invoice/${invoice.id}`}
+                size="lg"
+                variant="secondary"
+              >
+                <FileText aria-hidden="true" /> Invoice {invoiceLabel(invoice)}
               </ButtonLink>
             )}
           </>

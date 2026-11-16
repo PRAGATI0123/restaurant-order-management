@@ -29,7 +29,7 @@ function discountLabel(discount: Discount | undefined): string {
 
 /**
  * THE BILL, as the guest sees it: every line, then subtotal, discount, GST and
- * the total. The checkout screen and the invoice (Step 16) both use it, so
+ * the total. The checkout screen and the invoice both use it, so
  * the numbers can never be laid out differently in two places.
  */
 export function BillSummary({

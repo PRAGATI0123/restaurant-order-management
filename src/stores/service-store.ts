@@ -20,7 +20,7 @@ import {
 } from "@/domain/tables/table-guards";
 import { mergeTables, transferOrder, unmergeTables } from "@/domain/tables/table-orders";
 import { newId } from "@/lib/utils/id";
-import { sampleOrders } from "@/mocks/data/orders";
+import { sampleHistory, sampleOrders } from "@/mocks/data/orders";
 import { sampleTables } from "@/mocks/data/tables";
 import type { Id } from "@/types/common";
 import type {
@@ -116,9 +116,10 @@ export const useServiceStore = create<ServiceState>()((set, get) => {
 
   return {
     tables: sampleTables,
-    orders: sampleOrders,
-    payments: [],
-    invoices: [],
+    // Paid earlier today first, then the orders still in progress.
+    orders: [...sampleHistory.orders, ...sampleOrders],
+    payments: sampleHistory.payments,
+    invoices: sampleHistory.invoices,
 
     // ─── Orders ──────────────────────────────────────────────────────────────
 

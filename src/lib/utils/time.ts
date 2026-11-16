@@ -27,3 +27,16 @@ const clockFormatter = new Intl.DateTimeFormat("en-IN", {
 export function clockTime(at: IsoDateTime): string {
   return clockFormatter.format(new Date(at));
 }
+
+const dateTimeFormatter = new Intl.DateTimeFormat("en-IN", {
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+  hour: "numeric",
+  minute: "2-digit",
+});
+
+/** "16 Nov 2026, 2:05 pm", for invoices. Browser only, like clockTime. */
+export function dateTime(at: IsoDateTime): string {
+  return dateTimeFormatter.format(new Date(at));
+}
