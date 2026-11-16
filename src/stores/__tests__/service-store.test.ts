@@ -96,7 +96,7 @@ describe("service store: placing orders", () => {
       tableId: "t5",
       createdBy: "staff-1",
     });
-    expect(order).toMatchObject({ number: 104, status: "new", tableIds: ["t5"] });
+    expect(order).toMatchObject({ number: 107, status: "new", tableIds: ["t5"] });
     expect(store().orders.at(-1)?.id).toBe(order.id);
     expect(table("t5").status).toBe("occupied");
   });
@@ -117,7 +117,7 @@ describe("service store: placing orders", () => {
       },
       createdBy: "s",
     });
-    expect([takeaway.number, delivery.number]).toEqual([104, 105]);
+    expect([takeaway.number, delivery.number]).toEqual([107, 108]);
     expect(delivery.tableIds).toEqual([]);
   });
 
@@ -180,7 +180,7 @@ describe("service store: changing orders", () => {
     const naanLine = order("order-102").items.find((i) => i.name === "Garlic Naan")!;
     const created = store().splitOrder("order-102", { [naanLine.id]: 2 });
     expect(created).toMatchObject({
-      number: 104,
+      number: 107,
       tableIds: ["t4"],
       splitFromNumber: 102,
     });
