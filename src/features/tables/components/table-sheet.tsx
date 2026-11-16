@@ -1,6 +1,14 @@
 "use client";
 
-import { ArrowLeft, ArrowRightLeft, Link2, Receipt, Unlink, Users } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRightLeft,
+  Link2,
+  Plus,
+  Receipt,
+  Unlink,
+  Users,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -200,7 +208,8 @@ function SheetBody({
             <Badge variant="primary">{ORDER_STATUS_LABEL[order.status]}</Badge>
           </div>
           <p className="text-muted-foreground">
-            {summary.itemCount} items · placed {timeSince(order.createdAt, now)} ago
+            {summary.itemCount} {summary.itemCount === 1 ? "item" : "items"} · placed{" "}
+            {timeSince(order.createdAt, now)} ago
           </p>
           <p className="text-2xl font-semibold tabular-nums">
             {formatRupees(summary.totalPaise)}
@@ -232,6 +241,13 @@ function SheetBody({
             <Unlink aria-hidden="true" /> Separate
           </Button>
         </div>
+      )}
+
+      {!order && table.status !== "cleaning" && (
+        // No order yet: take one right here. The New order page opens with this table chosen.
+        <ButtonLink href={`/orders/new?table=${table.id}`} size="lg">
+          <Plus aria-hidden="true" /> Start order at {table.name}
+        </ButtonLink>
       )}
 
       {(order || table.status !== "cleaning") && (

@@ -31,7 +31,7 @@ export function TableTile({ table, order, joinedToName, now, onSelect }: TableTi
   const details = joinedToName
     ? `Joined to ${joinedToName}`
     : order && summary
-      ? `Order ${order.number}, ${summary.itemCount} items, ${formatRupees(summary.totalPaise)}`
+      ? `Order ${order.number}, ${summary.itemCount} ${summary.itemCount === 1 ? "item" : "items"}, ${formatRupees(summary.totalPaise)}`
       : TABLE_STATUS_LABEL[table.status];
 
   return (
