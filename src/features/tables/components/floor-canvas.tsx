@@ -15,10 +15,11 @@ export function gridPlacement(table: Pick<RestaurantTable, "x" | "y">) {
 
 /**
  * The room: a 12 × 8 CSS grid with a dotted background.
- * The canvas keeps a 3 : 2 shape (12 : 8), so every cell is square and a
- * 2 × 2 table space is square too: round tables stay perfect circles.
- * Below 640px wide it scrolls sideways instead of squashing the tables, so
- * they stay big enough to tap.
+ * The canvas keeps a 2 : 1 shape, so each cell is a little wider than tall
+ * (about 4 : 3). A table covers 2 × 2 cells, so every table is the same
+ * gentle rectangle, never a long thin one.
+ * Below 720px wide it scrolls sideways instead of squashing the tables, so
+ * they stay big enough to tap and to show an order's total and time.
  */
 export const FloorCanvas = ({
   children,
@@ -33,7 +34,7 @@ export const FloorCanvas = ({
     <div
       ref={ref}
       className={cn(
-        "relative grid aspect-[3/2] min-w-[640px] gap-2 p-3",
+        "relative grid aspect-[2/1] min-w-[720px] gap-2 p-3",
         "bg-[radial-gradient(var(--border)_1px,transparent_1px)] bg-size-[20px_20px]",
         className,
       )}
@@ -48,25 +49,8 @@ export const FloorCanvas = ({
 );
 
 /**
- * The round table itself, drawn inside its grid space. The space is a
- * "container", and the circle is as big as the smaller of its width and
- * height (min(100cqw, 100cqh)), so it's always a true circle, never an oval.
+ * The look every table shares, on the floor plan and in the editor:
+ * fills its 2 × 2 space, rounded corners, a 2px border (colored by the caller).
  */
-export function TableCircle({
-  className,
-  children,
-}: {
-  className?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <span
-      className={cn(
-        "flex size-[min(100cqw,100cqh)] flex-col items-center justify-center gap-0.5 rounded-full border-2 bg-surface p-2 text-center shadow-sm",
-        className,
-      )}
-    >
-      {children}
-    </span>
-  );
-}
+export const TABLE_BOX =
+  "flex flex-col justify-between overflow-hidden rounded-xl border-2 bg-surface p-2.5 text-left shadow-sm";

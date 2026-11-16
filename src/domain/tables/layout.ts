@@ -5,8 +5,8 @@ import { DomainError } from "../errors";
 /**
  * THE FLOOR PLAN GRID
  *
- * The room is a grid of 12 columns × 8 rows of square cells. Every table is
- * the same size: a round table covering 2 × 2 cells, whatever its number of
+ * The room is a grid of 12 columns × 8 rows of cells. Every table is the
+ * same size: a rounded rectangle covering 2 × 2 cells, whatever its number of
  * seats. Positions (x, y) are the table's top-left cell, counted from 0.
  *
  * Using whole cells (not pixels) means the plan looks the same on a phone and

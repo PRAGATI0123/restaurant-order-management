@@ -9,7 +9,7 @@ import type { Order } from "@/types/order";
 import type { RestaurantTable } from "@/types/table";
 import { summarizeOrders } from "../order-summary";
 import { TABLE_STATUS_STYLE } from "../table-style";
-import { TableCircle, gridPlacement } from "./floor-canvas";
+import { TABLE_BOX, gridPlacement } from "./floor-canvas";
 
 type TableTileProps = {
   table: RestaurantTable;
@@ -22,9 +22,9 @@ type TableTileProps = {
 };
 
 /**
- * One round table on the floor plan. The whole space is one button (easy to
- * hit). The circle's border is colored by status, and the status is written
- * in words too (not color alone).
+ * One table on the floor plan: a rounded rectangle, the same size for every
+ * table. The whole tile is one big button (easy to hit). Its border is
+ * colored by status, and the status is written in words too (not color alone).
  */
 export function TableTile({
   table,
@@ -48,51 +48,47 @@ export function TableTile({
       onClick={() => onSelect(table)}
       style={gridPlacement(table)}
       aria-label={`Table ${table.name}, ${table.seats} seats, ${details}`}
-      // [container-type:size] lets the circle size itself to this space
-      className="group [container-type:size] flex items-center justify-center rounded-full focus-visible:outline-none"
+      className={cn(
+        TABLE_BOX,
+        "transition-transform hover:-translate-y-0.5 motion-reduce:hover:translate-y-0",
+        style.border,
+        joinedToName && "border-dashed",
+      )}
     >
-      <TableCircle
-        className={cn(
-          "transition-transform group-hover:-translate-y-0.5 group-focus-visible:ring-4 group-focus-visible:ring-ring motion-reduce:group-hover:translate-y-0",
-          style.border,
-          joinedToName && "border-dashed",
-        )}
-      >
+      <span className="flex items-start justify-between gap-1">
         <span className="font-display text-lg leading-none font-semibold">
           {table.name}
         </span>
         <span
-          className="flex items-center gap-0.5 text-[11px] text-muted-foreground"
+          className="flex items-center gap-0.5 text-xs text-muted-foreground"
           aria-hidden="true"
         >
           <Users className="size-3" /> {table.seats}
         </span>
-        <span
-          className="flex flex-col items-center text-[11px] leading-tight"
-          aria-hidden="true"
-        >
-          {joinedToName ? (
-            <span className="flex items-center gap-1 font-semibold">
-              <Link2 className="size-3" /> {joinedToName}
+      </span>
+
+      <span className="flex min-w-0 flex-col text-xs leading-tight" aria-hidden="true">
+        {joinedToName ? (
+          <span className="flex items-center gap-1 font-semibold">
+            <Link2 className="size-3" /> with {joinedToName}
+          </span>
+        ) : summary ? (
+          <>
+            <span className="truncate text-sm font-semibold tabular-nums">
+              {formatRupees(summary.totalPaise)}
             </span>
-          ) : summary ? (
-            <>
-              <span className="font-semibold tabular-nums">
-                {formatRupees(summary.totalPaise)}
-              </span>
-              <span className="text-muted-foreground">
-                {summary.label}
-                {now !== null && summary.since && ` · ${timeSince(summary.since, now)}`}
-              </span>
-            </>
-          ) : (
-            <span className="flex items-center gap-1 font-semibold">
-              <span className={cn("size-2 rounded-full", style.dot)} />
-              {TABLE_STATUS_LABEL[table.status]}
+            <span className="truncate text-muted-foreground">
+              {summary.label}
+              {now !== null && summary.since && ` · ${timeSince(summary.since, now)}`}
             </span>
-          )}
-        </span>
-      </TableCircle>
+          </>
+        ) : (
+          <span className="flex items-center gap-1.5 font-semibold">
+            <span className={cn("size-2 shrink-0 rounded-full", style.dot)} />
+            {TABLE_STATUS_LABEL[table.status]}
+          </span>
+        )}
+      </span>
     </button>
   );
 }

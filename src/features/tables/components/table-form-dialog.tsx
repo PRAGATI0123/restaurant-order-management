@@ -20,7 +20,7 @@ type TableFormDialogProps = {
   onSave: (table: TableLayout) => void;
 };
 
-/** Add a table, or change a table's name or seats. Every table is round and the same size. */
+/** Add a table, or change a table's name or seats. Every table is the same size. */
 export function TableFormDialog({
   open,
   onClose,

@@ -2,7 +2,7 @@ import type { RestaurantTable } from "@/types/table";
 
 /**
  * SAMPLE FLOOR PLAN on the 12 × 8 grid (see domain/tables/layout.ts).
- * Every table is round and the same size (2 × 2 cells); x, y = top-left cell.
+ * Every table is the same size (2 × 2 cells); x, y = top-left cell.
  * Laid out in three neat rows with a one-cell gap between tables:
  *
  *   row 0   T1   T2   T3   T4
