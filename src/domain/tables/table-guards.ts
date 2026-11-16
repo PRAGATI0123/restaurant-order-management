@@ -151,3 +151,48 @@ export function startOrderAtTable(
     table: { ...table, status: "occupied" },
   };
 }
+
+/**
+ * AFTER AN ORDER IS PAID (or cancelled): which tables can be let go?
+ *
+ * Tables are let go as a GROUP: a main table plus every table joined to it.
+ *  - If ANY order is still open anywhere in the group (a second round, or the
+ *    other half of a split bill), the whole group stays as it is.
+ *  - Otherwise every Occupied table in the group goes to "cleaning" (guests
+ *    sat there, so it needs wiping), and joined tables are separated.
+ *
+ * `orders` must already include the paid order with its new status.
+ * Returns only the tables that changed.
+ */
+export function tablesToFreeAfter(
+  closed: Order,
+  tables: RestaurantTable[],
+  orders: Order[],
+): RestaurantTable[] {
+  const byId = new Map(tables.map((t) => [t.id, t]));
+  const mainIds = new Set(
+    closed.tableIds
+      .map((id) => byId.get(id))
+      .filter((t): t is RestaurantTable => t !== undefined)
+      .map((t) => t.mergedIntoId ?? t.id),
+  );
+
+  const changed: RestaurantTable[] = [];
+  for (const mainId of mainIds) {
+    const main = byId.get(mainId);
+    if (!main) continue;
+    const group = [main, ...tablesJoinedTo(main, tables)];
+    if (group.some((t) => openOrdersAt(t, orders).length > 0)) continue;
+
+    for (const table of group) {
+      const separated: RestaurantTable = { ...table };
+      delete separated.mergedIntoId; // drop the link first: joined tables can't change status
+      const freed =
+        separated.status === "occupied"
+          ? changeTableStatus(separated, "cleaning")
+          : separated;
+      if (freed.status !== table.status || table.mergedIntoId) changed.push(freed);
+    }
+  }
+  return changed;
+}

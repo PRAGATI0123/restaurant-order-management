@@ -1,4 +1,3 @@
-import type { Id } from "@/types/common";
 import type { Order, OrderStatus, OrderType } from "@/types/order";
 
 /** One place for how orders look, so the list, details and kitchen all match. */
@@ -21,21 +20,8 @@ export const ORDER_STATUS_BADGE: Record<
   cancelled: "danger",
 };
 
-/**
- * Where the order is going: "T5" or "T4 + T5" for dine-in, the customer's name
- * for takeaway and delivery.
- */
-export function orderWhere(
-  order: Order,
-  tableName: (id: Id) => string | undefined,
-): string {
-  if (order.type === "dine-in") {
-    const names = order.tableIds.map(tableName).filter(Boolean);
-    return names.length > 0 ? names.join(" + ") : "No table";
-  }
-  if (order.type === "delivery") return order.delivery?.customerName ?? "Delivery";
-  return order.customerName ?? "Walk-in";
-}
+/** The rule lives in domain/ (the store needs it for invoices); screens import it from here. */
+export { orderWhere } from "@/domain/orders/order-where";
 
 /** "Paneer Tikka, 2 × Sweet Lassi and 1 more", for a quick look in the list. */
 export function itemsPreview(order: Order, max = 2): string {

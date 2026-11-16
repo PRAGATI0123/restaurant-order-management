@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { DEFAULT_TAX_RATE_BASIS_POINTS } from "@/config/constants";
+import { calculateBill } from "@/domain/billing/calculate-bill";
 import { canPlace } from "@/domain/tables/layout";
 import { useServiceStore } from "@/stores/service-store";
 
@@ -207,5 +209,71 @@ describe("service store: changing orders", () => {
     expect(order(split.id).tableIds).toEqual(["t4", "t5"]);
     store().separateTables("t4");
     expect(order(split.id).tableIds).toEqual(["t4"]);
+  });
+});
+
+describe("billing", () => {
+  // Order 102 at T4 is served. Its total, worked out the same way checkout does:
+  const totalOf = (id: string) =>
+    calculateBill({
+      items: order(id).items,
+      discount: order(id).discount,
+      taxRateBasisPoints: DEFAULT_TAX_RATE_BASIS_POINTS,
+    }).totalPaise;
+
+  it("settles a served order: paid, payments and invoice saved, table to cleaning", () => {
+    const total = totalOf("order-102");
+    const invoice = store().settleOrder("order-102", [
+      { method: "cash", amountPaise: 50000, tenderedPaise: 50000 },
+      { method: "upi", amountPaise: total - 50000 },
+    ]);
+
+    expect(order("order-102").status).toBe("paid");
+    expect(table("t4").status).toBe("cleaning");
+    expect(invoice).toMatchObject({ number: 1001, where: "T4", totalPaise: total });
+    expect(store().invoices).toEqual([invoice]);
+    expect(store().payments.map((p) => [p.method, p.invoiceId])).toEqual([
+      ["cash", invoice.id],
+      ["upi", invoice.id],
+    ]);
+  });
+
+  it("changes nothing at all when the payment doesn't add up", () => {
+    const before = store();
+    expect(() =>
+      store().settleOrder("order-102", [{ method: "card", amountPaise: 100 }]),
+    ).toThrow(/still left to pay/);
+    expect(store()).toBe(before);
+  });
+
+  it("won't take payment for an order still in the kitchen", () => {
+    expect(() =>
+      store().settleOrder("order-101", [{ method: "card", amountPaise: 100 }]),
+    ).toThrow("Order 101 is Preparing. Serve it before taking payment.");
+  });
+
+  it("applies a discount, and the payment must match the new total", () => {
+    const fullTotal = totalOf("order-102");
+    store().setDiscount("order-102", { kind: "percent", basisPoints: 1000 });
+    const discounted = totalOf("order-102");
+    expect(discounted).toBeLessThan(fullTotal);
+    expect(() =>
+      store().settleOrder("order-102", [{ method: "card", amountPaise: fullTotal }]),
+    ).toThrow(/more than what's left to pay/);
+    const invoice = store().settleOrder("order-102", [
+      { method: "card", amountPaise: discounted },
+    ]);
+    expect(invoice.discount).toEqual({ kind: "percent", basisPoints: 1000 });
+  });
+
+  it("numbers the next invoice after the last one", () => {
+    store().settleOrder("order-102", [
+      { method: "card", amountPaise: totalOf("order-102") },
+    ]);
+    store().setOrderStatus("order-105", "served");
+    const second = store().settleOrder("order-105", [
+      { method: "cash", amountPaise: totalOf("order-105") },
+    ]);
+    expect(second.number).toBe(1002);
   });
 });

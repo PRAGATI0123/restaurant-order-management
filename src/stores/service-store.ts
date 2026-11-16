@@ -1,10 +1,17 @@
 import { create } from "zustand";
-import { DEMO_STAFF_ID } from "@/config/constants";
+import { DEFAULT_TAX_RATE_BASIS_POINTS, DEMO_STAFF_ID } from "@/config/constants";
+import {
+  nextInvoiceNumber,
+  setOrderDiscount,
+  settleOrder,
+} from "@/domain/billing/checkout";
+import type { PaymentDraft } from "@/domain/billing/payments";
 import { DomainError } from "@/domain/errors";
 import { cancelItem } from "@/domain/orders/cancel-item";
 import { createOrder, nextOrderNumber } from "@/domain/orders/create-order";
 import { addItemsToOrder, splitOrder } from "@/domain/orders/order-changes";
 import { moveOrder } from "@/domain/orders/order-state-machine";
+import { orderWhere } from "@/domain/orders/order-where";
 import {
   changeStatusSafely,
   openOrdersAt,
@@ -18,11 +25,13 @@ import { sampleTables } from "@/mocks/data/tables";
 import type { Id } from "@/types/common";
 import type {
   DeliveryDetails,
+  Discount,
   Order,
   OrderItem,
   OrderStatus,
   OrderType,
 } from "@/types/order";
+import type { Invoice, Payment } from "@/types/payment";
 import type { RestaurantTable, TableStatus } from "@/types/table";
 
 /** Everything the New order screen sends when "Send to kitchen" is tapped. */
@@ -41,6 +50,8 @@ export type TableLayout = Pick<RestaurantTable, "id" | "name" | "seats" | "x" | 
 type ServiceState = {
   tables: RestaurantTable[];
   orders: Order[];
+  payments: Payment[];
+  invoices: Invoice[];
 
   // orders
   placeOrder: (input: PlaceOrderInput) => Order;
@@ -49,6 +60,11 @@ type ServiceState = {
   cancelOrderItem: (orderId: Id, lineId: Id, reason: string) => void;
   addItemsToOrder: (orderId: Id, lines: OrderItem[]) => void;
   splitOrder: (orderId: Id, moves: Record<Id, number>) => Order;
+
+  // billing
+  setDiscount: (orderId: Id, discount: Discount | undefined) => void;
+  /** Takes the payment parts, marks the order paid, frees its tables. */
+  settleOrder: (orderId: Id, parts: PaymentDraft[]) => Invoice;
 
   // tables
   setTableStatus: (tableId: Id, to: TableStatus) => void;
@@ -75,7 +91,7 @@ function replaceAll<T extends { id: Id }>(list: T[], updated: T[]): T[] {
 
 /**
  * THE SERVICE STORE: everything happening on the floor right now:
- * tables and orders (payments join in Step 15).
+ * tables, orders, and the payments and invoices that close orders.
  *
  * Tables and orders live in ONE store on purpose. Moving an order changes the
  * order AND two tables. With one store, all three change in a single set(),
@@ -101,6 +117,8 @@ export const useServiceStore = create<ServiceState>()((set, get) => {
   return {
     tables: sampleTables,
     orders: sampleOrders,
+    payments: [],
+    invoices: [],
 
     // ─── Orders ──────────────────────────────────────────────────────────────
 
@@ -160,6 +178,36 @@ export const useServiceStore = create<ServiceState>()((set, get) => {
       );
       set({ orders: [...replaceAll(orders, [original]), created] });
       return created;
+    },
+
+    // ─── Billing ─────────────────────────────────────────────────────────────
+
+    setDiscount: (orderId, discount) =>
+      updateOrder(orderId, (order) => setOrderDiscount(order, discount, now())),
+
+    settleOrder: (orderId, parts) => {
+      const { tables, orders, payments, invoices } = get();
+      const order = mustFind(orders, orderId, "order");
+      const tableName = (id: Id) => tables.find((t) => t.id === id)?.name;
+      // Order paid + payments + invoice + freed tables: ONE set(), all or nothing.
+      const result = settleOrder({
+        order,
+        tables,
+        orders,
+        parts,
+        taxRateBasisPoints: DEFAULT_TAX_RATE_BASIS_POINTS, // Settings: Step 18
+        where: orderWhere(order, tableName),
+        invoiceNumber: nextInvoiceNumber(invoices),
+        ...by(),
+        newId,
+      });
+      set({
+        orders: replaceAll(orders, [result.order]),
+        tables: replaceAll(tables, result.tables),
+        payments: [...payments, ...result.payments],
+        invoices: [...invoices, result.invoice],
+      });
+      return result.invoice;
     },
 
     // ─── Tables ──────────────────────────────────────────────────────────────

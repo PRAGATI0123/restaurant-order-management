@@ -1,29 +1,20 @@
-import { Wallet } from "lucide-react";
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { PagePlaceholder } from "@/components/layout/page-placeholder";
-import { PageHeader } from "@/components/layout/page-header";
+import { Skeleton } from "@/components/ui/skeleton";
+import { CheckoutScreen } from "@/features/billing/components/checkout-screen";
 
 export const metadata: Metadata = { title: "Checkout" };
 
-// Route: /billing/[orderId]  e.g. /billing/demo-1
+// Route: /billing/[orderId]  e.g. /billing/order-102
 // The static folders "transactions" and "invoice" next to this one take priority,
 // so /billing/transactions does NOT land here.
+// `params` is a Promise in Next.js 16: read inside <Suspense> (Cache Components).
 export default function CheckoutPage({ params }: PageProps<"/billing/[orderId]">) {
   return (
-    <>
-      <PageHeader
-        title="Checkout"
-        description={
-          <Suspense fallback="Loading bill…">
-            {params.then(
-              ({ orderId }) => `Bill for order ${orderId}: discounts, tax and payment.`,
-            )}
-          </Suspense>
-        }
-        back={{ href: "/billing", label: "Back to billing" }}
-      />
-      <PagePlaceholder icon={Wallet} step={16} />
-    </>
+    <Suspense fallback={<Skeleton className="h-[60vh] w-full" />}>
+      {params.then(({ orderId }) => (
+        <CheckoutScreen orderId={orderId} />
+      ))}
+    </Suspense>
   );
 }

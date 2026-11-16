@@ -8,6 +8,7 @@ import {
   Receipt,
   Unlink,
   Users,
+  Wallet,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -227,6 +228,12 @@ function SheetBody({
                 {formatRupees(summary.totalPaise)}
               </span>
             </p>
+            {order.status === "served" && (
+              // Food is on the table: the next thing this order needs is payment.
+              <ButtonLink href={`/billing/${order.id}`} size="lg">
+                <Wallet aria-hidden="true" /> Checkout {formatRupees(summary.totalPaise)}
+              </ButtonLink>
+            )}
             <div className="grid gap-2 sm:grid-cols-2">
               <ButtonLink href={`/orders/${order.id}`} variant="secondary">
                 <Receipt aria-hidden="true" /> Open order
