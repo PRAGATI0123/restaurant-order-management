@@ -37,8 +37,9 @@ const delay = (step: number) => ({ animationDelay: `${0.15 + step * 0.12}s` });
  * THE LEFT SIDE OF LOGIN: a warm dining room with the restaurant's name,
  * today's date and what the POS does.
  *  - A teal veil runs left to right: deep behind the text, clear on the right,
- *    then the photo fades into the page colour, so the two halves blend into
- *    each other instead of meeting at a hard line. (On phones, top to bottom.)
+ *    then the photo deepens into its own warm brown, which softens into the
+ *    other half, so the two blend instead of meeting at a hard line.
+ *    (On phones, top to bottom.)
  *  - The photo drifts very slowly, like a camera panning across the room.
  *  - A small glass card floats in the corner with a "live" pulse.
  * Fixed white-on-dark text (not the theme's), because it sits on a photo.
@@ -65,9 +66,10 @@ export function LoginHero() {
       {/* Teal veil, left to right: deep behind the text, clear towards the right
           (top to bottom on phones, where the text spans the whole width) */}
       <div className="absolute inset-0 -z-10 bg-gradient-to-b from-[#04211f]/60 to-[#04211f]/85 lg:bg-gradient-to-r lg:from-[#04211f]/90 lg:via-[#04211f]/55 lg:to-transparent" />
-      {/* The join: the photo melts into the right half's colour (or the part
-          below, on phones) */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-24 bg-gradient-to-b from-transparent to-background lg:inset-x-auto lg:inset-y-0 lg:right-0 lg:h-auto lg:w-56 lg:bg-gradient-to-r lg:via-background/50" />
+      {/* The join: the photo deepens into its own warm brown at the edge (the
+          bottom edge on phones). The login layout carries that brown a little
+          into the other half, so the two meet without a line. */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-24 bg-gradient-to-b from-transparent to-photo-shade lg:inset-x-auto lg:inset-y-0 lg:right-0 lg:h-auto lg:w-56 lg:bg-gradient-to-r lg:via-photo-shade/60" />
 
       {/* Floating "live" card (big screens) */}
       <div

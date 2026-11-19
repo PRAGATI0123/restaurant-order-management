@@ -121,6 +121,12 @@
   --font-display: var(--font-fraunces);
 }
 
+/* The login photo's own colour: a deeper version of its average warm brown
+   (#47321a). The photo fades into it where the two halves of login meet. */
+@theme {
+  --color-photo-shade: #2b1e10;
+}
+
 /* Animations, available as the classes animate-dialog-in and animate-sheet-in */
 @theme {
   --animate-dialog-in: dialog-in 160ms ease-out;
