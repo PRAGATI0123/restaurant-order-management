@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# editor and tool files that `next dev` writes locally
+AGENTS.md
+CLAUDE.md
