@@ -21,6 +21,13 @@ const nextConfig: NextConfig = {
     ];
   },
   experimental: {
+    // This project lives inside OneDrive, which syncs (and briefly locks) every
+    // file in .next. Turbopack's on-disk dev cache is thousands of small files
+    // rewritten constantly; a locked or half-synced one makes `next dev` crash
+    // with "an internal error in Turbopack", and the site stops opening. So
+    // `next dev` keeps its cache in memory only. Restarts compile a bit slower;
+    // `next build` is unaffected. (docs: next-config-js/turbopackFileSystemCache)
+    turbopackFileSystemCacheForDev: false,
     instantInsights: {
       // This POS draws its pages in the browser, from data on the device and a
       // login only the browser knows (sessionStorage). The server can't draw a
