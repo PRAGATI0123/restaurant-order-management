@@ -9,7 +9,10 @@ export default function LoginLayout({ children }: { children: React.ReactNode })
   return (
     <main className="grid min-h-dvh flex-1 lg:grid-cols-[1.15fr_1fr]">
       <LoginHero />
-      <section className="flex flex-col bg-background">
+      {/* A faint teal and saffron glow, so the right side feels part of the same
+          room. Both sit away from the left edge, which must stay the plain page
+          colour: that's the colour the photo fades into, so there's no seam. */}
+      <section className="relative flex flex-col bg-background bg-[radial-gradient(30rem_20rem_at_100%_0%,color-mix(in_oklab,var(--primary)_8%,transparent),transparent_70%),radial-gradient(40rem_30rem_at_100%_100%,color-mix(in_oklab,var(--accent)_8%,transparent),transparent_70%)]">
         <div className="flex justify-end p-4">
           <ThemeToggle />
         </div>

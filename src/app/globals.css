@@ -175,13 +175,34 @@ body {
   }
 }
 
-/* Login page: the dish photos drift very slowly (only when motion is OK). */
-@keyframes hero-zoom {
+/* Login photo: a very slow "camera" pan and zoom across the dining room. */
+@keyframes ken-burns {
   from {
-    transform: scale(1.05);
+    transform: scale(1.04) translate(0, 0);
   }
   to {
-    transform: scale(1.14);
+    transform: scale(1.14) translate(-2%, -1.5%);
+  }
+}
+
+/* Login: the small "Kitchen open" card bobs gently. */
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+/* Login: the mustard line under the restaurant's name draws itself. */
+@keyframes grow-x {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
   }
 }
 
