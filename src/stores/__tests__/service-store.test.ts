@@ -3,6 +3,7 @@ import { DEFAULT_TAX_RATE_BASIS_POINTS } from "@/config/constants";
 import { calculateBill } from "@/domain/billing/calculate-bill";
 import { isOrderOpen } from "@/domain/orders/order-state-machine";
 import { canPlace } from "@/domain/tables/layout";
+import { sampleService } from "@/mocks/data/orders";
 import { useServiceStore } from "@/stores/service-store";
 import { loginAs, resetAuth } from "./login-as";
 
@@ -11,7 +12,11 @@ const table = (id: string) => store().tables.find((t) => t.id === id)!;
 const order = (id: string) => store().orders.find((o) => o.id === id)!;
 
 beforeEach(() => {
-  useServiceStore.setState(useServiceStore.getInitialState(), true);
+  // Every test starts in the middle of the sample service (a busy evening).
+  useServiceStore.setState(
+    { ...useServiceStore.getInitialState(), ...sampleService() },
+    true,
+  );
   resetAuth();
   loginAs("manager"); // stores check who is acting; most tests act as the manager
 });

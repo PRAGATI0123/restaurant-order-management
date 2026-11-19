@@ -126,6 +126,11 @@ sequenceDiagram
 - **Versioned data:** stores carry a version and a migration (the menu is at version 3: it
   added dish photos to menus saved before them).
 - **Login** is kept in sessionStorage (survives refresh, not closing the tab).
+- **A clean first visit.** The stores start with the sample menu, floor plan and staff, but
+  no orders or bills. The sample service (`mocks/data/orders.ts`) is a function, run only
+  when a manager loads it, so its times are always "now" (squeezed into the minutes since
+  midnight early in the morning, so "earlier today" stays today). Saved sample data can
+  never go stale on someone's device.
 - **Change detection** compares records by object identity: stores always create new
   objects, so "different object" means "changed", with no deep comparison.
 - **Service worker** (`public/sw.js`, production only): app files cache-first, pages

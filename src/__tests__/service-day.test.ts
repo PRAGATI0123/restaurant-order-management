@@ -11,6 +11,7 @@ import { buildKitchenBoard } from "@/domain/kitchen/kitchen-board";
 import { sumPaise } from "@/domain/money";
 import { buildOrderItem, groupsFor, type Catalog } from "@/domain/orders/item-choices";
 import { invoicesIn, rangeFor, salesSummary } from "@/domain/reports/sales-report";
+import { sampleService } from "@/mocks/data/orders";
 import { useMenuStore } from "@/stores/menu-store";
 import { useServiceStore } from "@/stores/service-store";
 import { useSettingsStore } from "@/stores/settings-store";
@@ -57,7 +58,11 @@ function lineFor(item: MenuItem, quantity: number, sizeIndex = 0): OrderItem {
 }
 
 beforeEach(() => {
-  useServiceStore.setState(useServiceStore.getInitialState(), true);
+  // Start in the middle of the sample service, so new orders meet a busy floor.
+  useServiceStore.setState(
+    { ...useServiceStore.getInitialState(), ...sampleService() },
+    true,
+  );
   useMenuStore.setState(useMenuStore.getInitialState(), true);
   useSettingsStore.setState(useSettingsStore.getInitialState(), true);
   resetAuth();

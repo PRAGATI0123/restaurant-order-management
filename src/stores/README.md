@@ -17,8 +17,10 @@ works without internet. `AuthGate` waits until the saved data is loaded before
 showing a page. The sync engine (`lib/sync`) watches the stores and sends every
 change to the (mock) server through the outbox, retrying when the network is bad.
 
-The first visit starts from the sample data in `mocks/data/`. Settings → "Reset demo
-data" puts it back.
+The first visit starts on a fresh day: the sample menu, floor plan and staff from
+`mocks/data/`, and no orders or bills. `reset-demo.ts` holds the two Settings buttons:
+**Load sample service** (a busy evening, timed from now) and **Start fresh** (back to the
+first visit).
 
 **Rules:**
 

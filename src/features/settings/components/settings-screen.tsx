@@ -1,6 +1,6 @@
 "use client";
 
-import { RotateCcw, Save } from "lucide-react";
+import { RotateCcw, Save, Sparkles } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -18,7 +18,8 @@ import {
   validateRestaurantDetails,
   type KitchenTimingValues,
 } from "@/lib/validation/settings";
-import { resetDemoData } from "@/stores/reset-demo";
+import { loadSampleService, resetDemoData } from "@/stores/reset-demo";
+import { useServiceStore } from "@/stores/service-store";
 import { useSettingsStore } from "@/stores/settings-store";
 import type { RestaurantDetails } from "@/types/settings";
 
@@ -225,30 +226,68 @@ function AppearanceCard() {
   );
 }
 
+/**
+ * The app opens on a fresh day (no orders). For a demo, a manager can fill
+ * today with a sample service, and later clear everything again.
+ */
 function DemoDataCard() {
-  const [confirming, setConfirming] = useState(false);
+  const hasOrders = useServiceStore((s) => s.orders.length > 0);
+  const [confirming, setConfirming] = useState<"load" | "reset" | null>(null);
+
+  const load = () => {
+    if (tryAction(loadSampleService)) {
+      toast.success("Sample service loaded", {
+        description: "Tables, kitchen tickets and today's bills are filled in.",
+      });
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Demo data</CardTitle>
+        <CardTitle>Sample data</CardTitle>
       </CardHeader>
-      <CardContent className="flex flex-col items-start gap-3">
-        <p className="text-sm text-muted-foreground">
-          Put tables, orders, payments, the menu and settings back to the sample data.
-          Useful before a demo.
-        </p>
-        <Button variant="danger" onClick={() => setConfirming(true)}>
-          <RotateCcw aria-hidden="true" /> Reset demo data
-        </Button>
+      <CardContent className="flex flex-col gap-6">
+        <div className="flex flex-col items-start gap-3">
+          <p className="text-sm text-muted-foreground">
+            <span className="font-semibold text-foreground">Sample service.</span> Fill
+            today with a busy evening: orders at tables and in the kitchen, and bills paid
+            earlier, all timed from now. Handy for showing the app to someone.
+          </p>
+          <Button
+            variant="secondary"
+            onClick={() => (hasOrders ? setConfirming("load") : load())}
+          >
+            <Sparkles aria-hidden="true" /> Load sample service
+          </Button>
+        </div>
+        <div className="flex flex-col items-start gap-3 border-t border-border pt-6">
+          <p className="text-sm text-muted-foreground">
+            <span className="font-semibold text-foreground">Fresh start.</span> Clear
+            every order, bill and payment, free all tables, and put the menu and settings
+            back to how they came.
+          </p>
+          <Button variant="danger" onClick={() => setConfirming("reset")}>
+            <RotateCcw aria-hidden="true" /> Start fresh
+          </Button>
+        </div>
       </CardContent>
       <ConfirmDialog
-        open={confirming}
-        onClose={() => setConfirming(false)}
-        title="Reset all demo data?"
-        description="Every order, payment and change you made is replaced by the sample data. This can't be undone."
-        confirmLabel="Reset everything"
+        open={confirming === "load"}
+        onClose={() => setConfirming(null)}
+        title="Replace today's orders?"
+        description="Today's tables, orders, payments and bills are replaced by the sample service, and two dishes are marked sold out. The rest of the menu and the settings stay as they are. This can't be undone."
+        confirmLabel="Load sample service"
+        onConfirm={load}
+      />
+      <ConfirmDialog
+        open={confirming === "reset"}
+        onClose={() => setConfirming(null)}
+        title="Start fresh?"
+        description="Every order, bill, payment and change you made is removed, and the menu and settings go back to how they came. This can't be undone."
+        confirmLabel="Clear everything"
         onConfirm={() => {
-          if (tryAction(resetDemoData)) toast.success("Demo data reset");
+          if (tryAction(resetDemoData)) toast.success("Fresh start: no orders yet");
         }}
       />
     </Card>

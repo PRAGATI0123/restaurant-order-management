@@ -20,7 +20,6 @@ import {
 } from "@/domain/tables/table-guards";
 import { mergeTables, transferOrder, unmergeTables } from "@/domain/tables/table-orders";
 import { newId } from "@/lib/utils/id";
-import { sampleHistory, sampleOrders } from "@/mocks/data/orders";
 import { sampleTables } from "@/mocks/data/tables";
 import type { Id } from "@/types/common";
 import type {
@@ -109,7 +108,8 @@ function replaceAll<T extends { id: Id }>(list: T[], updated: T[]): T[] {
  * Every action first checks the logged-in staff member may do it
  * (requirePermission). That also tells us WHO did it, for the order timeline.
  *
- * Saved on this device (IndexedDB); the first visit starts from the sample data.
+ * Saved on this device (IndexedDB). The first visit starts on a fresh day:
+ * the sample floor plan, and no orders or bills yet.
  */
 export const useServiceStore = create<ServiceState>()(
   persist(
@@ -124,11 +124,12 @@ export const useServiceStore = create<ServiceState>()(
       const by = (action: Action) => ({ at: now(), by: requirePermission(action).id });
 
       return {
+        // A fresh day: the floor plan, every table free, nothing ordered or
+        // paid yet. (Settings → Load sample service fills in a busy evening.)
         tables: sampleTables,
-        // Paid earlier today first, then the orders still in progress.
-        orders: [...sampleHistory.orders, ...sampleOrders],
-        payments: sampleHistory.payments,
-        invoices: sampleHistory.invoices,
+        orders: [],
+        payments: [],
+        invoices: [],
 
         // ─── Orders ──────────────────────────────────────────────────────────────
 

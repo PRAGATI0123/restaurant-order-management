@@ -33,9 +33,13 @@ PIN **1234** on the next page.
 | Vikram Joshi   | Waiter        | Tables, Orders                       |
 | Farhan Qureshi | Kitchen staff | Kitchen, Menu (mark dishes sold out) |
 
-**Showing it to someone?** Follow the 10-minute walkthrough in
-[docs/DEMO.md](docs/DEMO.md). Start with **Settings → Reset demo data** so the sample orders
-are fresh (their timers start again).
+**It starts clean.** A first visit opens on a fresh day: the sample menu, floor plan and
+staff are there, but no orders or bills, like a real restaurant before opening. To see it
+busy, log in as the manager and tap **Load sample service** (on the dashboard, or in
+Settings): six orders in progress and six bills paid earlier today, all timed from the
+moment you load them. **Settings → Start fresh** clears everything again.
+
+**Showing it to someone?** Follow the 10-minute walkthrough in [docs/DEMO.md](docs/DEMO.md).
 
 To try **offline loading** (service worker), use the production build, which the dev server
 doesn't run:
@@ -147,20 +151,20 @@ No UI kit and no chart library: components and charts are hand-built for touch a
 
 ## Tests
 
-**429 tests** in 31 files, run in about 5 seconds: `npm test`.
+**438 tests** in 32 files, run in about 5 seconds: `npm test`.
 
-| Area                         | Tests | What they prove                                                                                            |
-| ---------------------------- | ----: | ---------------------------------------------------------------------------------------------------------- |
-| `domain/orders`              |    84 | Order state machine, cart, choices, add/cancel/split, filters                                              |
-| `domain/billing`             |    64 | Bill maths and rounding, split bills, payments and change, checkout, invoices                              |
-| `domain/tables`              |    48 | Table state machine, move/join/separate, layout, guards                                                    |
-| `domain` (money)             |    38 | Paise maths, parsing, formatting, allocation without losing a paisa                                        |
-| `domain/kitchen`             |    28 | Timers and urgency, board columns, "to cook now"                                                           |
-| `domain/menu`, `domain/auth` |    45 | Menu and catalogue rules; login, lockout, role pages                                                       |
-| `domain/reports`, `sync`     |    23 | Date ranges, sales, CSV; outbox coalescing and retries                                                     |
-| `stores`                     |    47 | Actions apply rules atomically; **each role is stopped** where it should be                                |
-| `lib`, `mocks/api`           |    48 | Form validation; the mock server's own checks                                                              |
-| **Integration**              |     4 | A full service through every role; refused steps change nothing; **200 random orders add up to the paisa** |
+| Area                         | Tests | What they prove                                                                                                                        |
+| ---------------------------- | ----: | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `domain/orders`              |    84 | Order state machine, cart, choices, add/cancel/split, filters                                                                          |
+| `domain/billing`             |    64 | Bill maths and rounding, split bills, payments and change, checkout, invoices                                                          |
+| `domain/tables`              |    48 | Table state machine, move/join/separate, layout, guards                                                                                |
+| `domain` (money)             |    38 | Paise maths, parsing, formatting, allocation without losing a paisa                                                                    |
+| `domain/kitchen`             |    28 | Timers and urgency, board columns, "to cook now"                                                                                       |
+| `domain/menu`, `domain/auth` |    45 | Menu and catalogue rules; login, lockout, role pages                                                                                   |
+| `domain/reports`, `sync`     |    23 | Date ranges, sales, CSV; outbox coalescing and retries                                                                                 |
+| `stores`                     |    56 | Actions apply rules atomically; **each role is stopped** where it should be; a clean first visit; the sample service is timed from now |
+| `lib`, `mocks/api`           |    48 | Form validation; the mock server's own checks                                                                                          |
+| **Integration**              |     4 | A full service through every role; refused steps change nothing; **200 random orders add up to the paisa**                             |
 
 ---
 
@@ -173,7 +177,7 @@ No UI kit and no chart library: components and charts are hand-built for touch a
 - **Payments are simulated.** No card terminal or UPI integration; no receipt printer
   (invoices print through the browser).
 - **Reports read this device's history.** Ranges like "Last 30 days" fill up as the app is
-  used; the sample data covers today only.
+  used; the sample service covers today only.
 - **No UI or end-to-end browser tests yet.** Behaviour is tested through the domain rules,
   stores and integration flows; screens were checked by hand in the browser.
 

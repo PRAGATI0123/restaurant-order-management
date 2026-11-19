@@ -8,9 +8,10 @@ Each step says what to tap and what to point out.
 1. `npm run dev`, open <http://localhost:3000>. It opens the login: the dining-room photo
    on one side, the staff names on the other.
 2. Tap **Pragati Gautam (Manager)**; on her PIN page type **1234** (tap or keyboard).
-3. **Settings → Reset demo data → Reset everything.** The sample orders start fresh, so the
-   kitchen timers show realistic times (a 12-minute ticket turning amber, a 17-minute one
-   red).
+3. The dashboard says **"A fresh day"**: the app starts with no orders, like a restaurant
+   before opening. Tap **Load sample service** (also in Settings → Sample data). Six orders
+   in progress and six bills paid earlier today appear, timed from now, so the kitchen
+   timers look realistic (a 12-minute ticket, a 17-minute one already red).
 4. Optional: a tablet-sized window shows the touch layout best.
 
 ## 1. The floor (1 minute): Waiter

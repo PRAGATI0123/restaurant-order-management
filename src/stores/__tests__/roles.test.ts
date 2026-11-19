@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { sampleService } from "@/mocks/data/orders";
 import { useAuthStore } from "@/stores/auth-store";
 import { useMenuStore } from "@/stores/menu-store";
 import { useServiceStore } from "@/stores/service-store";
@@ -9,7 +10,11 @@ const service = () => useServiceStore.getState();
 const order = (id: string) => service().orders.find((o) => o.id === id)!;
 
 beforeEach(() => {
-  useServiceStore.setState(useServiceStore.getInitialState(), true);
+  // Every test starts in the middle of the sample service (a busy evening).
+  useServiceStore.setState(
+    { ...useServiceStore.getInitialState(), ...sampleService() },
+    true,
+  );
   useMenuStore.setState(useMenuStore.getInitialState(), true);
   useSettingsStore.setState(useSettingsStore.getInitialState(), true);
   resetAuth();

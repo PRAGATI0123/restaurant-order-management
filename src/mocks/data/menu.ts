@@ -132,7 +132,6 @@ export const sampleMenuItems: MenuItem[] = [
     categoryId: "cat-starters",
     pricePaise: 36000,
     isVeg: false,
-    isAvailable: false,
   }),
 
   // Mains
@@ -293,6 +292,5 @@ export const sampleMenuItems: MenuItem[] = [
     categoryId: "cat-desserts",
     pricePaise: 22000,
     isVeg: true,
-    isAvailable: false,
   }),
 ];

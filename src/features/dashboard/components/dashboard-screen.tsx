@@ -8,12 +8,15 @@ import {
   LayoutGrid,
   Plus,
   Receipt,
+  Sparkles,
   TrendingUp,
 } from "lucide-react";
 import Link from "next/link";
 import { useMemo } from "react";
+import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { ButtonLink } from "@/components/ui/button-link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -35,6 +38,8 @@ import { TABLE_STATUS_LABEL } from "@/domain/tables/table-state-machine";
 import { useNow } from "@/lib/hooks/use-now";
 import { cn } from "@/lib/utils/cn";
 import { clockTime } from "@/lib/utils/time";
+import { tryAction } from "@/lib/utils/try-action";
+import { loadSampleService } from "@/stores/reset-demo";
 import { useServiceStore } from "@/stores/service-store";
 import type { TableStatus } from "@/types/table";
 import { ORDER_TYPE_LABEL } from "@/features/orders/order-display";
@@ -50,6 +55,47 @@ import { useSettingsStore } from "@/stores/settings-store";
 import { useCan } from "@/features/auth/hooks";
 
 const TABLE_STATUSES: TableStatus[] = ["available", "occupied", "reserved", "cleaning"];
+
+/**
+ * Shown while no order has been taken yet on this device (a fresh install, or
+ * after Settings → Start fresh): what to do first, instead of a page of zeros.
+ */
+function FreshDay() {
+  const can = useCan();
+  return (
+    <Card className="border-primary/30 bg-primary/5">
+      <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center">
+        <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
+          <Sparkles className="size-6" aria-hidden="true" />
+        </span>
+        <div className="flex-1">
+          <h2 className="font-display text-xl font-semibold">A fresh day</h2>
+          <p className="text-muted-foreground">
+            No orders yet. Take the first one
+            {can("settings.edit") && ", or load a sample service to see a busy evening"}.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {can("settings.edit") && (
+            <Button
+              variant="secondary"
+              onClick={() => {
+                if (tryAction(loadSampleService)) toast.success("Sample service loaded");
+              }}
+            >
+              <Sparkles aria-hidden="true" /> Load sample service
+            </Button>
+          )}
+          {can("order.create") && (
+            <ButtonLink href="/orders/new">
+              <Plus aria-hidden="true" /> First order
+            </ButtonLink>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 /**
  * THE DASHBOARD: today, live. It updates by itself whenever anything changes
@@ -117,6 +163,7 @@ function Today({ now }: { now: number }) {
 
   return (
     <div className="flex flex-col gap-6">
+      {orders.length === 0 && <FreshDay />}
       <section
         aria-label="Today's numbers"
         className="grid grid-cols-2 gap-3 lg:grid-cols-4"

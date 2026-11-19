@@ -46,7 +46,7 @@ describe("findChoiceProblems", () => {
   });
 
   it("refuses sold-out dishes, extras the dish doesn't offer, and bad quantities", () => {
-    const fish = dish("item-fish-amritsari"); // sold out in the sample menu
+    const fish = { ...dish("item-fish-amritsari"), isAvailable: false }; // sold out
     expect(findChoiceProblems(fish, none, catalog).item).toBe(
       "Fish Amritsari is sold out.",
     );
