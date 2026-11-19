@@ -19,7 +19,7 @@ export type NavItem = {
 /**
  * The main navigation, used by the sidebar (big screens) and the top bar
  * (phones and tablets in portrait). One list, so the two can never disagree.
- * In Step 10 each item gets a list of roles that may see it.
+ * Each role sees only the pages it may open (domain/auth/routes.ts).
  */
 export const mainNav: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },

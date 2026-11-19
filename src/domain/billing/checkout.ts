@@ -1,6 +1,7 @@
 import type { Id, IsoDateTime } from "@/types/common";
 import type { Discount, Order } from "@/types/order";
 import type { Invoice, InvoiceLine, Payment } from "@/types/payment";
+import type { RestaurantDetails } from "@/types/settings";
 import type { RestaurantTable } from "@/types/table";
 import { DomainError } from "../errors";
 import {
@@ -75,6 +76,8 @@ export type SettleInput = {
   orders: Order[];
   parts: PaymentDraft[];
   taxRateBasisPoints: number;
+  /** The restaurant's details from Settings, printed on the invoice. */
+  restaurant: RestaurantDetails;
   /** Where the order went, already written out: "T4 + T5", "Rohan". */
   where: string;
   invoiceNumber: number;
@@ -132,6 +135,7 @@ export function settleOrder(input: SettleInput): {
   const invoice: Invoice = {
     id: invoiceId,
     number: input.invoiceNumber,
+    restaurant: input.restaurant,
     orderId: order.id,
     orderNumber: order.number,
     orderType: order.type,

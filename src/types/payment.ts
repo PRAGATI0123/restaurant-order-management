@@ -1,5 +1,6 @@
 import type { Id, IsoDateTime, Paise } from "./common";
 import type { Discount, OrderType } from "./order";
+import type { RestaurantDetails } from "./settings";
 
 /** Simulated payment methods. No real money moves in this app. */
 export type PaymentMethod = "cash" | "card" | "upi";
@@ -37,6 +38,8 @@ export type InvoiceLine = {
 export type Invoice = {
   id: Id;
   number: number; // shown as "INV-1001"
+  /** Who issued it, as it was that day (Settings can change later). */
+  restaurant: RestaurantDetails;
   orderId: Id;
   orderNumber: number;
   orderType: OrderType;

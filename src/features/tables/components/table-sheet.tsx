@@ -36,6 +36,8 @@ import type { Id } from "@/types/common";
 import type { RestaurantTable } from "@/types/table";
 import { summarizeOrder } from "../order-summary";
 import { STATUS_ACTION_LABEL } from "../table-style";
+import { useTaxRate } from "@/stores/settings-store";
+import { useCan } from "@/features/auth/hooks";
 
 type TableSheetProps = {
   tableId: Id | undefined;
@@ -93,6 +95,8 @@ function SheetBody({
   onClose: () => void;
   onShowTable: (tableId: Id) => void;
 }) {
+  const can = useCan(); // hide what this role can't do (the store checks again)
+  const taxRate = useTaxRate(); // GST from Settings
   const setTableStatus = useServiceStore((s) => s.setTableStatus);
   const moveOrderToTable = useServiceStore((s) => s.moveOrderToTable);
   const joinTables = useServiceStore((s) => s.joinTables);
@@ -207,7 +211,7 @@ function SheetBody({
   return (
     <div className="flex flex-col gap-5">
       {tableOrders.map((order) => {
-        const summary = summarizeOrder(order);
+        const summary = summarizeOrder(order, taxRate);
         return (
           <div
             key={order.id}
@@ -228,7 +232,7 @@ function SheetBody({
                 {formatRupees(summary.totalPaise)}
               </span>
             </p>
-            {order.status === "served" && (
+            {order.status === "served" && can("payment.take") && (
               // Food is on the table: the next thing this order needs is payment.
               <ButtonLink href={`/billing/${order.id}`} size="lg">
                 <Wallet aria-hidden="true" /> Checkout {formatRupees(summary.totalPaise)}
@@ -238,15 +242,17 @@ function SheetBody({
               <ButtonLink href={`/orders/${order.id}`} variant="secondary">
                 <Receipt aria-hidden="true" /> Open order
               </ButtonLink>
-              <Button
-                variant="secondary"
-                onClick={() => {
-                  setMovingId(order.id);
-                  setMode("move");
-                }}
-              >
-                <ArrowRightLeft aria-hidden="true" /> Move to another table
-              </Button>
+              {can("table.transfer") && (
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    setMovingId(order.id);
+                    setMode("move");
+                  }}
+                >
+                  <ArrowRightLeft aria-hidden="true" /> Move to another table
+                </Button>
+              )}
             </div>
           </div>
         );
@@ -259,19 +265,21 @@ function SheetBody({
             With {joined.map((t) => t.name).join(", ")} · {totalSeats(table, joined)}{" "}
             seats
           </span>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => {
-              if (tryAction(() => separateTables(table.id))) {
-                toast.success("Tables separated", {
-                  description: `${joined.map((t) => t.name).join(", ")} now need cleaning.`,
-                });
-              }
-            }}
-          >
-            <Unlink aria-hidden="true" /> Separate
-          </Button>
+          {can("table.merge") && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                if (tryAction(() => separateTables(table.id))) {
+                  toast.success("Tables separated", {
+                    description: `${joined.map((t) => t.name).join(", ")} now need cleaning.`,
+                  });
+                }
+              }}
+            >
+              <Unlink aria-hidden="true" /> Separate
+            </Button>
+          )}
         </div>
       )}
 
@@ -279,49 +287,55 @@ function SheetBody({
         <div className="grid gap-3 sm:grid-cols-2">
           {/* Take an order right here: the New order page opens with this table chosen.
               With orders already open, this is a "second round" (a new kitchen ticket). */}
-          <ButtonLink href={`/orders/new?table=${table.id}`} size="lg">
-            <Plus aria-hidden="true" />
-            {tableOrders.length > 0
-              ? "New order (another round)"
-              : `Start order at ${table.name}`}
-          </ButtonLink>
-          <Button
-            variant="secondary"
-            size="lg"
-            onClick={() => {
-              setJoining([]);
-              setMode("join");
-            }}
-          >
-            <Link2 aria-hidden="true" /> Join tables
-          </Button>
+          {can("order.create") && (
+            <ButtonLink href={`/orders/new?table=${table.id}`} size="lg">
+              <Plus aria-hidden="true" />
+              {tableOrders.length > 0
+                ? "New order (another round)"
+                : `Start order at ${table.name}`}
+            </ButtonLink>
+          )}
+          {can("table.merge") && (
+            <Button
+              variant="secondary"
+              size="lg"
+              onClick={() => {
+                setJoining([]);
+                setMode("join");
+              }}
+            >
+              <Link2 aria-hidden="true" /> Join tables
+            </Button>
+          )}
         </div>
       )}
 
-      <div className="flex flex-col gap-2">
-        <span className="text-sm font-semibold">Change status</span>
-        <div className="grid gap-3 sm:grid-cols-2">
-          {statusOptions.map(({ to, label, check }) => (
-            <Button
-              key={to}
-              size="lg"
-              variant={to === "available" ? "primary" : "secondary"}
-              disabled={!check.ok}
-              onClick={() => {
-                if (tryAction(() => setTableStatus(table.id, to))) {
-                  toast.success(`${table.name} is now ${TABLE_STATUS_LABEL[to]}`);
-                  onClose();
-                }
-              }}
-            >
-              {label}
-            </Button>
-          ))}
+      {can("table.changeStatus") && (
+        <div className="flex flex-col gap-2">
+          <span className="text-sm font-semibold">Change status</span>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {statusOptions.map(({ to, label, check }) => (
+              <Button
+                key={to}
+                size="lg"
+                variant={to === "available" ? "primary" : "secondary"}
+                disabled={!check.ok}
+                onClick={() => {
+                  if (tryAction(() => setTableStatus(table.id, to))) {
+                    toast.success(`${table.name} is now ${TABLE_STATUS_LABEL[to]}`);
+                    onClose();
+                  }
+                }}
+              >
+                {label}
+              </Button>
+            ))}
+          </div>
+          {blockedReason && !blockedReason.ok && (
+            <p className="text-sm text-muted-foreground">{blockedReason.reason}</p>
+          )}
         </div>
-        {blockedReason && !blockedReason.ok && (
-          <p className="text-sm text-muted-foreground">{blockedReason.reason}</p>
-        )}
-      </div>
+      )}
     </div>
   );
 }

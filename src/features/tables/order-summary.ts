@@ -1,4 +1,3 @@
-import { DEFAULT_TAX_RATE_BASIS_POINTS } from "@/config/constants";
 import { calculateBill } from "@/domain/billing/calculate-bill";
 import type { Paise } from "@/types/common";
 import type { Order } from "@/types/order";
@@ -6,13 +5,17 @@ import type { Order } from "@/types/order";
 /**
  * The two numbers a table tile shows: how many items, and the bill so far.
  * The total comes from calculateBill (Step 7), the same function the checkout
- * will use, so the floor plan and the bill can never disagree.
+ * uses, so the floor plan and the bill can never disagree. The GST rate comes
+ * from Settings (screens pass it in with useTaxRate()).
  */
-export function summarizeOrder(order: Order): { itemCount: number; totalPaise: Paise } {
+export function summarizeOrder(
+  order: Order,
+  taxRateBasisPoints: number,
+): { itemCount: number; totalPaise: Paise } {
   const bill = calculateBill({
     items: order.items,
     discount: order.discount,
-    taxRateBasisPoints: DEFAULT_TAX_RATE_BASIS_POINTS,
+    taxRateBasisPoints,
   });
   const itemCount = bill.lines.reduce((sum, line) => sum + line.quantity, 0);
   return { itemCount, totalPaise: bill.totalPaise };
@@ -23,8 +26,8 @@ export function summarizeOrder(order: Order): { itemCount: number; totalPaise: P
  * bills): numbers like "#102 +1", items and bills added up, and the time of
  * the oldest order (how long the guests have been ordering).
  */
-export function summarizeOrders(orders: Order[]) {
-  const summaries = orders.map(summarizeOrder);
+export function summarizeOrders(orders: Order[], taxRateBasisPoints: number) {
+  const summaries = orders.map((order) => summarizeOrder(order, taxRateBasisPoints));
   const oldest = [...orders].sort((a, b) => a.createdAt.localeCompare(b.createdAt))[0];
   return {
     label:

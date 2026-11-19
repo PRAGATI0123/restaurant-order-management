@@ -45,6 +45,9 @@ import {
 } from "@/features/reports/components/charts";
 import { summarizeOrder } from "@/features/tables/order-summary";
 import { TABLE_STATUS_STYLE } from "@/features/tables/table-style";
+import { useTaxRate } from "@/stores/settings-store";
+import { useSettingsStore } from "@/stores/settings-store";
+import { useCan } from "@/features/auth/hooks";
 
 const TABLE_STATUSES: TableStatus[] = ["available", "occupied", "reserved", "cleaning"];
 
@@ -54,6 +57,7 @@ const TABLE_STATUSES: TableStatus[] = ["available", "occupied", "reserved", "cle
  * same store as every other screen. Each card links to where you'd act on it.
  */
 export function DashboardScreen() {
+  const can = useCan(); // hide what this role can't do (the store checks again)
   const now = useNow();
   return (
     <>
@@ -62,12 +66,16 @@ export function DashboardScreen() {
         description="Today at a glance. Updates live as orders and payments come in."
         actions={
           <>
-            <ButtonLink href="/kitchen" variant="secondary">
-              <ChefHat aria-hidden="true" /> Kitchen
-            </ButtonLink>
-            <ButtonLink href="/orders/new">
-              <Plus aria-hidden="true" /> New order
-            </ButtonLink>
+            {can("kitchen.view") && (
+              <ButtonLink href="/kitchen" variant="secondary">
+                <ChefHat aria-hidden="true" /> Kitchen
+              </ButtonLink>
+            )}
+            {can("order.create") && (
+              <ButtonLink href="/orders/new">
+                <Plus aria-hidden="true" /> New order
+              </ButtonLink>
+            )}
           </>
         }
       />
@@ -78,6 +86,8 @@ export function DashboardScreen() {
 }
 
 function Today({ now }: { now: number }) {
+  const timing = useSettingsStore((s) => s.kitchenTiming); // amber / red minutes, from Settings
+  const taxRate = useTaxRate(); // GST from Settings
   const orders = useServiceStore((s) => s.orders);
   const tables = useServiceStore((s) => s.tables);
   const invoices = useServiceStore((s) => s.invoices);
@@ -94,11 +104,11 @@ function Today({ now }: { now: number }) {
       hours: salesByHour(paid),
       topDishes: itemSales(paid).slice(0, 5),
       methods: paymentTotals(payments.filter((p) => paidIds.has(p.invoiceId))),
-      openValue: open.reduce((sum, o) => sum + summarizeOrder(o).totalPaise, 0),
+      openValue: open.reduce((sum, o) => sum + summarizeOrder(o, taxRate).totalPaise, 0),
       floor: floorNow(tables, orders),
-      kitchen: kitchenSummary(buildKitchenBoard(orders), new Date(now)),
+      kitchen: kitchenSummary(buildKitchenBoard(orders), new Date(now), timing),
     };
-  }, [now, orders, tables, invoices, payments]);
+  }, [now, orders, tables, invoices, payments, taxRate, timing]);
 
   const { summary, floor, kitchen } = today;
   const recent = today.paid

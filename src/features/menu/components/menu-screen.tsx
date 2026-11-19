@@ -21,11 +21,13 @@ import { useMenuStore } from "@/stores/menu-store";
 import type { MenuItem } from "@/types/menu";
 import { MenuItemCard } from "./menu-item-card";
 import { MenuItemFormDialog } from "./menu-item-form-dialog";
+import { useCan } from "@/features/auth/hooks";
 
 /** Which form is open: none, "add", or "edit" a given item. */
 type FormState = { open: false } | { open: true; item?: MenuItem };
 
 export function MenuScreen() {
+  const can = useCan(); // hide what this role can't do (the store checks again)
   // Select only what this screen needs from the store.
   const items = useMenuStore((s) => s.items);
   const categories = useMenuStore((s) => s.categories);
@@ -93,17 +95,19 @@ export function MenuScreen() {
         title="Menu"
         description={`${items.length} items · ${soldOutCount} sold out today`}
         actions={
-          <>
-            <ButtonLink href="/menu/categories" variant="secondary">
-              <Layers aria-hidden="true" /> Categories
-            </ButtonLink>
-            <ButtonLink href="/menu/modifiers" variant="secondary">
-              <SlidersHorizontal aria-hidden="true" /> Modifiers
-            </ButtonLink>
-            <Button onClick={() => openForm()}>
-              <Plus aria-hidden="true" /> Add item
-            </Button>
-          </>
+          can("menu.edit") && (
+            <>
+              <ButtonLink href="/menu/categories" variant="secondary">
+                <Layers aria-hidden="true" /> Categories
+              </ButtonLink>
+              <ButtonLink href="/menu/modifiers" variant="secondary">
+                <SlidersHorizontal aria-hidden="true" /> Modifiers
+              </ButtonLink>
+              <Button onClick={() => openForm()}>
+                <Plus aria-hidden="true" /> Add item
+              </Button>
+            </>
+          )
         }
       />
 
@@ -175,8 +179,10 @@ export function MenuScreen() {
               <MenuItemCard
                 item={item}
                 categoryName={categoryName.get(item.categoryId) ?? "No category"}
-                onToggleAvailable={toggleAvailable}
-                onEdit={openForm}
+                onToggleAvailable={
+                  can("menu.toggleAvailability") ? toggleAvailable : undefined
+                }
+                onEdit={can("menu.edit") ? openForm : undefined}
               />
             </li>
           ))}

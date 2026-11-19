@@ -21,10 +21,14 @@ import { STATUS_ORDER, TABLE_STATUS_STYLE } from "../table-style";
 import { FloorCanvas } from "./floor-canvas";
 import { TableSheet } from "./table-sheet";
 import { TableTile } from "./table-tile";
+import { useTaxRate } from "@/stores/settings-store";
+import { useCan } from "@/features/auth/hooks";
 
 type View = "floor" | "list";
 
 export function TablesScreen() {
+  const can = useCan(); // hide what this role can't do (the store checks again)
+  const taxRate = useTaxRate(); // GST from Settings
   const tables = useServiceStore((s) => s.tables);
   const orders = useServiceStore((s) => s.orders);
   const now = useNow();
@@ -56,12 +60,16 @@ export function TablesScreen() {
         description={`${counts.available} free · ${counts.occupied} occupied · ${tables.length} tables in total`}
         actions={
           <>
-            <ButtonLink href="/tables/editor" variant="secondary">
-              <PencilRuler aria-hidden="true" /> Edit floor plan
-            </ButtonLink>
-            <ButtonLink href="/orders/new">
-              <Plus aria-hidden="true" /> New order
-            </ButtonLink>
+            {can("floorPlan.edit") && (
+              <ButtonLink href="/tables/editor" variant="secondary">
+                <PencilRuler aria-hidden="true" /> Edit floor plan
+              </ButtonLink>
+            )}
+            {can("order.create") && (
+              <ButtonLink href="/orders/new">
+                <Plus aria-hidden="true" /> New order
+              </ButtonLink>
+            )}
           </>
         }
       />
@@ -110,7 +118,8 @@ export function TablesScreen() {
           <ul className="divide-y divide-border">
             {sortedForList.map((table) => {
               const open = openOrdersAt(table, orders);
-              const summary = open.length > 0 ? summarizeOrders(open) : undefined;
+              const summary =
+                open.length > 0 ? summarizeOrders(open, taxRate) : undefined;
               const style = TABLE_STATUS_STYLE[table.status];
               return (
                 <li key={table.id}>

@@ -30,6 +30,8 @@ import {
   itemsPreview,
   orderWhere,
 } from "../order-display";
+import { useTaxRate } from "@/stores/settings-store";
+import { useCan } from "@/features/auth/hooks";
 
 const STATUS_CHIPS: { value: OrderStatusFilter; label: string }[] = [
   { value: "open", label: "Open" },
@@ -44,6 +46,8 @@ const STATUS_CHIPS: { value: OrderStatusFilter; label: string }[] = [
 
 /** Every order, newest first, with status and type filters and search. */
 export function OrdersScreen() {
+  const can = useCan(); // hide what this role can't do (the store checks again)
+  const taxRate = useTaxRate(); // GST from Settings
   const orders = useServiceStore((s) => s.orders);
   const tables = useServiceStore((s) => s.tables);
   const now = useNow();
@@ -73,9 +77,11 @@ export function OrdersScreen() {
         title="Orders"
         description={`${counts.open} open · ${counts.all} today`}
         actions={
-          <ButtonLink href="/orders/new" size="lg">
-            <Plus aria-hidden="true" /> New order
-          </ButtonLink>
+          can("order.create") && (
+            <ButtonLink href="/orders/new" size="lg">
+              <Plus aria-hidden="true" /> New order
+            </ButtonLink>
+          )
         }
       />
 
@@ -137,16 +143,18 @@ export function OrdersScreen() {
                 Clear filters
               </Button>
             ) : (
-              <ButtonLink href="/orders/new">
-                <Plus aria-hidden="true" /> New order
-              </ButtonLink>
+              can("order.create") && (
+                <ButtonLink href="/orders/new">
+                  <Plus aria-hidden="true" /> New order
+                </ButtonLink>
+              )
             )
           }
         />
       ) : (
         <ul className="flex flex-col gap-3">
           {visible.map((order) => {
-            const summary = summarizeOrder(order);
+            const summary = summarizeOrder(order, taxRate);
             return (
               <li key={order.id}>
                 <Link

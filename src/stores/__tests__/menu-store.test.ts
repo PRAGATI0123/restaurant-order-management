@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { useMenuStore } from "@/stores/menu-store";
+import { loginAs, resetAuth } from "./login-as";
 
 // Zustand stores work outside React too: getState() reads, actions write.
 const store = () => useMenuStore.getState();
@@ -8,6 +9,8 @@ const dish = (id: string) => store().items.find((item) => item.id === id)!;
 beforeEach(() => {
   // Start every test from the sample menu again.
   useMenuStore.setState(useMenuStore.getInitialState(), true);
+  resetAuth();
+  loginAs("manager"); // stores check who is acting; most tests act as the manager
 });
 
 describe("menu store: categories", () => {

@@ -5,7 +5,6 @@ import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { ButtonLink } from "@/components/ui/button-link";
 import { EmptyState } from "@/components/ui/empty-state";
-import { RESTAURANT_DETAILS } from "@/config/constants";
 import { invoiceLabel } from "@/domain/billing/checkout";
 import { PAYMENT_METHOD_LABEL } from "@/domain/billing/payments";
 import { splitGst } from "@/domain/billing/transactions";
@@ -87,14 +86,14 @@ export function InvoiceScreen({ invoiceId }: { invoiceId: Id }) {
         <header className="flex flex-col justify-between gap-4 border-b border-border pb-6 sm:flex-row">
           <div>
             <p className="font-display text-2xl font-semibold">
-              {RESTAURANT_DETAILS.name}
+              {invoice.restaurant.name}
             </p>
-            <p className="text-sm text-muted-foreground">{RESTAURANT_DETAILS.address}</p>
+            <p className="text-sm text-muted-foreground">{invoice.restaurant.address}</p>
             <p className="text-sm text-muted-foreground">
-              Phone {RESTAURANT_DETAILS.phone}
+              Phone {invoice.restaurant.phone}
             </p>
             <p className="text-sm text-muted-foreground">
-              GSTIN {RESTAURANT_DETAILS.gstin}
+              GSTIN {invoice.restaurant.gstin}
             </p>
           </div>
           <div className="sm:text-right">

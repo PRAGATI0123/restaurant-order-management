@@ -10,6 +10,7 @@ import type { RestaurantTable } from "@/types/table";
 import { summarizeOrders } from "../order-summary";
 import { TABLE_STATUS_STYLE } from "../table-style";
 import { TABLE_BOX, gridPlacement } from "./floor-canvas";
+import { useTaxRate } from "@/stores/settings-store";
 
 type TableTileProps = {
   table: RestaurantTable;
@@ -33,8 +34,9 @@ export function TableTile({
   now,
   onSelect,
 }: TableTileProps) {
+  const taxRate = useTaxRate(); // GST from Settings
   const style = TABLE_STATUS_STYLE[table.status];
-  const summary = orders.length > 0 ? summarizeOrders(orders) : undefined;
+  const summary = orders.length > 0 ? summarizeOrders(orders, taxRate) : undefined;
 
   const details = joinedToName
     ? `Joined to ${joinedToName}`

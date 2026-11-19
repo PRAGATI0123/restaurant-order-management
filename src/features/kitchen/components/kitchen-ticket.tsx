@@ -17,6 +17,8 @@ import {
 } from "@/domain/kitchen/kitchen-board";
 import { cn } from "@/lib/utils/cn";
 import { ORDER_TYPE_LABEL } from "@/features/orders/order-display";
+import { useSettingsStore } from "@/stores/settings-store";
+import { useCan } from "@/features/auth/hooks";
 
 /** The one big button on each ticket: what the cook is DOING next. */
 const NEXT_ACTION: Record<
@@ -62,12 +64,14 @@ type KitchenTicketProps = {
  * notes, and one large button that moves it on.
  */
 export function KitchenTicket({ order, where, now, onAdvance }: KitchenTicketProps) {
+  const can = useCan(); // hide what this role can't do (the store checks again)
+  const timing = useSettingsStore((s) => s.kitchenTiming); // amber / red minutes, from Settings
   const cooking = order.status !== "ready";
   const seconds =
     now === null ? undefined : elapsedSeconds(ticketClockStart(order), new Date(now));
   // Only tickets still being cooked can be late. Ready food has its own clock.
   const urgency: TicketUrgency =
-    cooking && seconds !== undefined ? ticketUrgency(seconds) : "on-time";
+    cooking && seconds !== undefined ? ticketUrgency(seconds, timing) : "on-time";
   const style = URGENCY_STYLE[urgency];
   const justIn = order.status === "new" && seconds !== undefined && seconds < 60;
   const action = NEXT_ACTION[order.status];
@@ -118,15 +122,17 @@ export function KitchenTicket({ order, where, now, onAdvance }: KitchenTicketPro
         {order.splitFromNumber && (
           <Badge variant="neutral">Split from #{order.splitFromNumber}</Badge>
         )}
-        <ButtonLink
-          href={`/orders/${order.id}`}
-          variant="ghost"
-          size="sm"
-          className="-my-2 ml-auto px-2 text-muted-foreground"
-          aria-label={`Order ${order.number} details`}
-        >
-          <Info aria-hidden="true" /> Details
-        </ButtonLink>
+        {can("orders.view") && (
+          <ButtonLink
+            href={`/orders/${order.id}`}
+            variant="ghost"
+            size="sm"
+            className="-my-2 ml-auto px-2 text-muted-foreground"
+            aria-label={`Order ${order.number} details`}
+          >
+            <Info aria-hidden="true" /> Details
+          </ButtonLink>
+        )}
       </div>
 
       <ul className="flex flex-col gap-2 border-t border-dashed border-border pt-3">
@@ -171,16 +177,25 @@ export function KitchenTicket({ order, where, now, onAdvance }: KitchenTicketPro
         })}
       </ul>
 
-      <Button
-        variant={action.variant}
-        size="lg"
-        fullWidth
-        className="mt-auto px-3"
-        onClick={() => onAdvance(order)}
-        aria-label={`${action.label}: order ${order.number}`}
-      >
-        <action.icon aria-hidden="true" /> {action.label}
-      </Button>
+      {/* Cooks start and finish; serving is front of house (a waiter's tap). */}
+      {can(order.status === "ready" ? "order.serve" : "kitchen.updateStatus") ? (
+        <Button
+          variant={action.variant}
+          size="lg"
+          fullWidth
+          className="mt-auto px-3"
+          onClick={() => onAdvance(order)}
+          aria-label={`${action.label}: order ${order.number}`}
+        >
+          <action.icon aria-hidden="true" /> {action.label}
+        </Button>
+      ) : (
+        <p className="mt-auto rounded-xl bg-surface-muted px-3 py-3 text-center text-sm font-semibold text-muted-foreground">
+          {order.status === "ready"
+            ? "Waiting for a waiter to pick up"
+            : "Waiting for the kitchen"}
+        </p>
+      )}
     </article>
   );
 }

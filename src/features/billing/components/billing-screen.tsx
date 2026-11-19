@@ -20,6 +20,7 @@ import {
   ORDER_TYPE_LABEL,
   orderWhere,
 } from "@/features/orders/order-display";
+import { useTaxRate } from "@/stores/settings-store";
 
 /**
  * BILLING: every bill that is still open.
@@ -28,6 +29,7 @@ import {
  *    listed so the cashier can see what's coming, but checkout waits.
  */
 export function BillingScreen() {
+  const taxRate = useTaxRate(); // GST from Settings
   const orders = useServiceStore((s) => s.orders);
   const tables = useServiceStore((s) => s.tables);
   const now = useNow();
@@ -38,7 +40,10 @@ export function BillingScreen() {
     .toSorted((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt));
   const toPay = open.filter((o) => o.status === "served");
   const coming = open.filter((o) => o.status !== "served");
-  const outstanding = toPay.reduce((sum, o) => sum + summarizeOrder(o).totalPaise, 0);
+  const outstanding = toPay.reduce(
+    (sum, o) => sum + summarizeOrder(o, taxRate).totalPaise,
+    0,
+  );
 
   return (
     <>
@@ -126,7 +131,8 @@ function BillRow({
   where: string;
   now: number | null;
 }) {
-  const summary = summarizeOrder(order);
+  const taxRate = useTaxRate(); // GST from Settings
+  const summary = summarizeOrder(order, taxRate);
   const ready = order.status === "served";
   return (
     <li>

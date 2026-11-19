@@ -33,8 +33,10 @@ function choicesSummary(item: MenuItem): string | undefined {
 type MenuItemCardProps = {
   item: MenuItem;
   categoryName: string;
-  onToggleAvailable: (item: MenuItem, isAvailable: boolean) => void;
-  onEdit: (item: MenuItem) => void;
+  /** Missing = this role can't mark dishes sold out (the switch is shown, but off-limits). */
+  onToggleAvailable?: (item: MenuItem, isAvailable: boolean) => void;
+  /** Missing = this role can't edit dishes (no pencil button). */
+  onEdit?: (item: MenuItem) => void;
 };
 
 export function MenuItemCard({
@@ -88,7 +90,8 @@ export function MenuItemCard({
         <div className="flex items-center gap-2">
           <Switch
             checked={item.isAvailable}
-            onCheckedChange={(checked) => onToggleAvailable(item, checked)}
+            onCheckedChange={(checked) => onToggleAvailable?.(item, checked)}
+            disabled={!onToggleAvailable}
             label={`${item.name} available`}
           />
           <span
@@ -97,14 +100,16 @@ export function MenuItemCard({
             {soldOut ? "Sold out" : "Available"}
           </span>
         </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => onEdit(item)}
-          aria-label={`Edit ${item.name}`}
-        >
-          <Pencil aria-hidden="true" />
-        </Button>
+        {onEdit && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => onEdit(item)}
+            aria-label={`Edit ${item.name}`}
+          >
+            <Pencil aria-hidden="true" />
+          </Button>
+        )}
       </div>
     </Card>
   );

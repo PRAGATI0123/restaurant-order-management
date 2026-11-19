@@ -17,7 +17,6 @@ import { Button } from "@/components/ui/button";
 import { ButtonLink } from "@/components/ui/button-link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { DEFAULT_TAX_RATE_BASIS_POINTS } from "@/config/constants";
 import { calculateBill } from "@/domain/billing/calculate-bill";
 import { invoiceLabel, invoiceLines } from "@/domain/billing/checkout";
 import { PAYMENT_METHOD_LABEL, type PaymentDraft } from "@/domain/billing/payments";
@@ -35,6 +34,8 @@ import {
 import { BillSummary } from "./bill-summary";
 import { DiscountDialog } from "./discount-dialog";
 import { PaymentPanel } from "./payment-panel";
+import { useTaxRate } from "@/stores/settings-store";
+import { useCan } from "@/features/auth/hooks";
 
 /**
  * CHECKOUT for one order: the bill on the left, taking payment on the right.
@@ -102,6 +103,8 @@ export function CheckoutScreen({ orderId }: { orderId: Id }) {
 }
 
 function OpenCheckout({ order }: { order: Order }) {
+  const can = useCan(); // hide what this role can't do (the store checks again)
+  const taxRate = useTaxRate(); // GST from Settings
   const setDiscount = useServiceStore((s) => s.setDiscount);
   const setOrderStatus = useServiceStore((s) => s.setOrderStatus);
   const settleOrder = useServiceStore((s) => s.settleOrder);
@@ -112,7 +115,7 @@ function OpenCheckout({ order }: { order: Order }) {
   const bill = calculateBill({
     items: order.items,
     discount: order.discount,
-    taxRateBasisPoints: DEFAULT_TAX_RATE_BASIS_POINTS,
+    taxRateBasisPoints: taxRate,
   });
   const servable = order.status === "served";
   const discountLocked = parts.length > 0;
@@ -145,20 +148,22 @@ function OpenCheckout({ order }: { order: Order }) {
             subtotalPaise={bill.subtotalPaise}
             discount={order.discount}
             discountPaise={bill.discountPaise}
-            taxRateBasisPoints={DEFAULT_TAX_RATE_BASIS_POINTS}
+            taxRateBasisPoints={taxRate}
             taxPaise={bill.taxPaise}
             totalPaise={bill.totalPaise}
             discountAction={
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-primary"
-                disabled={discountLocked}
-                onClick={() => setDiscountForm((f) => ({ open: true, key: f.key + 1 }))}
-              >
-                <Percent aria-hidden="true" />
-                {order.discount ? "Change" : "Add discount"}
-              </Button>
+              can("bill.discount") && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-primary"
+                  disabled={discountLocked}
+                  onClick={() => setDiscountForm((f) => ({ open: true, key: f.key + 1 }))}
+                >
+                  <Percent aria-hidden="true" />
+                  {order.discount ? "Change" : "Add discount"}
+                </Button>
+              )
             }
           />
           {discountLocked && (
@@ -179,7 +184,11 @@ function OpenCheckout({ order }: { order: Order }) {
           <CardTitle>Payment</CardTitle>
         </CardHeader>
         <CardContent>
-          {servable ? (
+          {servable && !can("payment.take") ? (
+            <p className="text-muted-foreground">
+              Payment is taken by a cashier or a manager.
+            </p>
+          ) : servable ? (
             <PaymentPanel
               totalPaise={bill.totalPaise}
               parts={parts}
@@ -193,17 +202,19 @@ function OpenCheckout({ order }: { order: Order }) {
                 The food is ready. Mark it served once it reaches the guest, then take
                 payment.
               </p>
-              <Button
-                size="lg"
-                fullWidth
-                onClick={() => {
-                  if (tryAction(() => setOrderStatus(order.id, "served"))) {
-                    toast.success(`Order ${order.number} served`);
-                  }
-                }}
-              >
-                <HandPlatter aria-hidden="true" /> Mark served
-              </Button>
+              {can("order.serve") && (
+                <Button
+                  size="lg"
+                  fullWidth
+                  onClick={() => {
+                    if (tryAction(() => setOrderStatus(order.id, "served"))) {
+                      toast.success(`Order ${order.number} served`);
+                    }
+                  }}
+                >
+                  <HandPlatter aria-hidden="true" /> Mark served
+                </Button>
+              )}
             </div>
           ) : (
             <div className="flex flex-col items-start gap-3">
@@ -214,9 +225,11 @@ function OpenCheckout({ order }: { order: Order }) {
               <p className="text-muted-foreground">
                 Payment opens once the food is served. You can already add a discount.
               </p>
-              <ButtonLink href={`/orders/${order.id}`} variant="secondary">
-                Open the order
-              </ButtonLink>
+              {can("orders.view") && (
+                <ButtonLink href={`/orders/${order.id}`} variant="secondary">
+                  Open the order
+                </ButtonLink>
+              )}
             </div>
           )}
         </CardContent>

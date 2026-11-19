@@ -15,6 +15,13 @@ import {
 } from "@/domain/billing/checkout";
 import { tablesToFreeAfter } from "@/domain/tables/table-guards";
 
+const RESTAURANT = {
+  name: "Test Bistro",
+  address: "1 Test Road",
+  phone: "+91 0000 0000",
+  gstin: "19ABCDE1234F1Z5",
+};
+
 let counter = 0;
 const newId = (prefix: string) => `${prefix}-${++counter}`;
 
@@ -46,6 +53,7 @@ function settle(overrides: Partial<SettleInput> = {}) {
     orders: [servedOrder],
     parts: [{ method: "cash", amountPaise: 58800, tenderedPaise: 60000 }],
     taxRateBasisPoints: 500,
+    restaurant: RESTAURANT,
     where: "T4",
     invoiceNumber: 1001,
     at: NOW,

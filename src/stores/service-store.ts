@@ -1,11 +1,11 @@
 import { create } from "zustand";
-import { DEFAULT_TAX_RATE_BASIS_POINTS, DEMO_STAFF_ID } from "@/config/constants";
 import {
   nextInvoiceNumber,
   setOrderDiscount,
   settleOrder,
 } from "@/domain/billing/checkout";
 import type { PaymentDraft } from "@/domain/billing/payments";
+import type { Action } from "@/domain/auth/permissions";
 import { DomainError } from "@/domain/errors";
 import { cancelItem } from "@/domain/orders/cancel-item";
 import { createOrder, nextOrderNumber } from "@/domain/orders/create-order";
@@ -33,6 +33,8 @@ import type {
 } from "@/types/order";
 import type { Invoice, Payment } from "@/types/payment";
 import type { RestaurantTable, TableStatus } from "@/types/table";
+import { requirePermission } from "./auth-store";
+import { useSettingsStore } from "./settings-store";
 
 /** Everything the New order screen sends when "Send to kitchen" is tapped. */
 export type PlaceOrderInput = {
@@ -41,7 +43,6 @@ export type PlaceOrderInput = {
   tableId?: Id;
   customerName?: string;
   delivery?: DeliveryDetails;
-  createdBy: Id;
 };
 
 /** What the floor plan editor saves: where tables are and what they look like. */
@@ -103,6 +104,9 @@ function replaceAll<T extends { id: Id }>(list: T[], updated: T[]): T[] {
  *
  * A table can hold several open orders (a second round, or split bills).
  *
+ * Every action first checks the logged-in staff member may do it
+ * (requirePermission). That also tells us WHO did it, for the order timeline.
+ *
  * In memory for now (sample data, reset on refresh). Step 19: IndexedDB.
  */
 export const useServiceStore = create<ServiceState>()((set, get) => {
@@ -112,7 +116,8 @@ export const useServiceStore = create<ServiceState>()((set, get) => {
     const updated = change(mustFind(orders, orderId, "order"));
     set({ orders: replaceAll(orders, [updated]) });
   };
-  const by = () => ({ at: now(), by: DEMO_STAFF_ID }); // who did it, and when (login: Step 18)
+  /** Checks the permission, then returns who is doing it, and when. */
+  const by = (action: Action) => ({ at: now(), by: requirePermission(action).id });
 
   return {
     tables: sampleTables,
@@ -124,10 +129,11 @@ export const useServiceStore = create<ServiceState>()((set, get) => {
     // ─── Orders ──────────────────────────────────────────────────────────────
 
     placeOrder: ({ tableId, ...input }) => {
+      const { at, by: createdBy } = by("order.create");
       const { tables, orders } = get();
-      const at = now();
       const order = createOrder({
         ...input,
+        createdBy,
         id: newId("order"),
         number: nextOrderNumber(orders),
         at,
@@ -154,19 +160,29 @@ export const useServiceStore = create<ServiceState>()((set, get) => {
     },
 
     // "paid" only happens at checkout (with a payment), "cancelled" needs a reason.
-    setOrderStatus: (orderId, to) =>
-      updateOrder(orderId, (order) => moveOrder(order, to, by())),
+    // The kitchen starts and finishes cooking; front of house serves.
+    setOrderStatus: (orderId, to) => {
+      const who = by(to === "served" ? "order.serve" : "kitchen.updateStatus");
+      updateOrder(orderId, (order) => moveOrder(order, to, who));
+    },
 
-    cancelOrder: (orderId, reason) =>
-      updateOrder(orderId, (order) => moveOrder(order, "cancelled", by(), reason)),
+    cancelOrder: (orderId, reason) => {
+      const who = by("order.cancel");
+      updateOrder(orderId, (order) => moveOrder(order, "cancelled", who, reason));
+    },
 
-    cancelOrderItem: (orderId, lineId, reason) =>
-      updateOrder(orderId, (order) => cancelItem(order, lineId, reason, by())),
+    cancelOrderItem: (orderId, lineId, reason) => {
+      const who = by("order.cancel");
+      updateOrder(orderId, (order) => cancelItem(order, lineId, reason, who));
+    },
 
-    addItemsToOrder: (orderId, lines) =>
-      updateOrder(orderId, (order) => addItemsToOrder(order, lines, now())),
+    addItemsToOrder: (orderId, lines) => {
+      const { at } = by("order.create");
+      updateOrder(orderId, (order) => addItemsToOrder(order, lines, at));
+    },
 
     splitOrder: (orderId, moves) => {
+      by("order.split");
       const { orders } = get();
       const { original, created } = splitOrder(
         mustFind(orders, orderId, "order"),
@@ -183,10 +199,13 @@ export const useServiceStore = create<ServiceState>()((set, get) => {
 
     // ─── Billing ─────────────────────────────────────────────────────────────
 
-    setDiscount: (orderId, discount) =>
-      updateOrder(orderId, (order) => setOrderDiscount(order, discount, now())),
+    setDiscount: (orderId, discount) => {
+      const { at } = by("bill.discount");
+      updateOrder(orderId, (order) => setOrderDiscount(order, discount, at));
+    },
 
     settleOrder: (orderId, parts) => {
+      const who = by("payment.take");
       const { tables, orders, payments, invoices } = get();
       const order = mustFind(orders, orderId, "order");
       const tableName = (id: Id) => tables.find((t) => t.id === id)?.name;
@@ -196,10 +215,12 @@ export const useServiceStore = create<ServiceState>()((set, get) => {
         tables,
         orders,
         parts,
-        taxRateBasisPoints: DEFAULT_TAX_RATE_BASIS_POINTS, // Settings: Step 18
+        // From Settings, and frozen on the invoice:
+        taxRateBasisPoints: useSettingsStore.getState().taxRateBasisPoints,
+        restaurant: useSettingsStore.getState().restaurant,
         where: orderWhere(order, tableName),
         invoiceNumber: nextInvoiceNumber(invoices),
-        ...by(),
+        ...who,
         newId,
       });
       set({
@@ -214,6 +235,7 @@ export const useServiceStore = create<ServiceState>()((set, get) => {
     // ─── Tables ──────────────────────────────────────────────────────────────
 
     setTableStatus: (tableId, to) => {
+      by("table.changeStatus");
       const { tables, orders } = get();
       const updated = changeStatusSafely(
         mustFind(tables, tableId, "table"),
@@ -225,6 +247,7 @@ export const useServiceStore = create<ServiceState>()((set, get) => {
     },
 
     moveOrderToTable: (orderId, toTableId) => {
+      by("table.transfer");
       const { tables, orders } = get();
       const order = mustFind(orders, orderId, "order");
       const from = mustFind(tables, order.tableIds[0] ?? "", "table");
@@ -240,6 +263,7 @@ export const useServiceStore = create<ServiceState>()((set, get) => {
     },
 
     joinTables: (mainTableId, joiningIds) => {
+      by("table.merge");
       const { tables, orders } = get();
       const main = mustFind(tables, mainTableId, "table");
       const joining = joiningIds.map((id) => mustFind(tables, id, "table"));
@@ -256,6 +280,7 @@ export const useServiceStore = create<ServiceState>()((set, get) => {
     },
 
     separateTables: (mainTableId) => {
+      by("table.merge");
       const { tables, orders } = get();
       const main = mustFind(tables, mainTableId, "table");
       const joined = tablesJoinedTo(main, tables);
@@ -271,7 +296,8 @@ export const useServiceStore = create<ServiceState>()((set, get) => {
       });
     },
 
-    saveLayout: (layout) =>
+    saveLayout: (layout) => {
+      by("floorPlan.edit");
       set((state) => {
         const current = new Map(state.tables.map((t) => [t.id, t]));
         return {
@@ -287,6 +313,7 @@ export const useServiceStore = create<ServiceState>()((set, get) => {
               : { id, ...placed, status: "available" as const };
           }),
         };
-      }),
+      });
+    },
   };
 });

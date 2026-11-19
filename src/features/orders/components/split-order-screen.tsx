@@ -10,7 +10,6 @@ import { ButtonLink } from "@/components/ui/button-link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { QuantityStepper } from "@/components/ui/quantity-stepper";
-import { DEFAULT_TAX_RATE_BASIS_POINTS } from "@/config/constants";
 import { calculateBill } from "@/domain/billing/calculate-bill";
 import { DomainError } from "@/domain/errors";
 import { nextOrderNumber } from "@/domain/orders/create-order";
@@ -20,6 +19,7 @@ import { tryAction } from "@/lib/utils/try-action";
 import { useServiceStore } from "@/stores/service-store";
 import type { Id } from "@/types/common";
 import type { Order } from "@/types/order";
+import { useTaxRate } from "@/stores/settings-store";
 
 /**
  * SPLIT AN ORDER: choose how many of each dish move to a new order
@@ -158,12 +158,13 @@ function PreviewCard({
   order?: Order;
   empty?: string;
 }) {
+  const taxRate = useTaxRate(); // GST from Settings
   const lines = order?.items.filter((i) => i.status === "active") ?? [];
   const total = order
     ? calculateBill({
         items: order.items,
         discount: order.discount,
-        taxRateBasisPoints: DEFAULT_TAX_RATE_BASIS_POINTS,
+        taxRateBasisPoints: taxRate,
       }).totalPaise
     : 0;
   return (

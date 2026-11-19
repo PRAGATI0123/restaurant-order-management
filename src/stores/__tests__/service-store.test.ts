@@ -4,6 +4,7 @@ import { calculateBill } from "@/domain/billing/calculate-bill";
 import { isOrderOpen } from "@/domain/orders/order-state-machine";
 import { canPlace } from "@/domain/tables/layout";
 import { useServiceStore } from "@/stores/service-store";
+import { loginAs, resetAuth } from "./login-as";
 
 const store = () => useServiceStore.getState();
 const table = (id: string) => store().tables.find((t) => t.id === id)!;
@@ -11,6 +12,8 @@ const order = (id: string) => store().orders.find((o) => o.id === id)!;
 
 beforeEach(() => {
   useServiceStore.setState(useServiceStore.getInitialState(), true);
+  resetAuth();
+  loginAs("manager"); // stores check who is acting; most tests act as the manager
 });
 
 describe("sample floor", () => {
@@ -97,7 +100,6 @@ describe("service store: placing orders", () => {
       type: "dine-in",
       items: [line],
       tableId: "t5",
-      createdBy: "staff-1",
     });
     expect(order).toMatchObject({ number: 107, status: "new", tableIds: ["t5"] });
     expect(store().orders.at(-1)?.id).toBe(order.id);
@@ -108,7 +110,6 @@ describe("service store: placing orders", () => {
     const takeaway = store().placeOrder({
       type: "takeaway",
       items: [line],
-      createdBy: "s",
     });
     const delivery = store().placeOrder({
       type: "delivery",
@@ -118,7 +119,6 @@ describe("service store: placing orders", () => {
         phone: "9876543210",
         address: "12 MG Road, Bengaluru",
       },
-      createdBy: "s",
     });
     expect([takeaway.number, delivery.number]).toEqual([107, 108]);
     expect(delivery.tableIds).toEqual([]);
@@ -131,12 +131,11 @@ describe("service store: placing orders", () => {
         type: "dine-in",
         items: [line],
         tableId: "t6",
-        createdBy: "s",
       }),
     ).toThrow("T6 is being cleaned.");
-    expect(() =>
-      store().placeOrder({ type: "dine-in", items: [line], createdBy: "s" }),
-    ).toThrow(/Choose a table/);
+    expect(() => store().placeOrder({ type: "dine-in", items: [line] })).toThrow(
+      /Choose a table/,
+    );
     expect(store().orders).toBe(before.orders);
     expect(store().tables).toBe(before.tables);
   });

@@ -1,9 +1,13 @@
-import { LogOut, UtensilsCrossed } from "lucide-react";
+import { UtensilsCrossed } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
 import { ActiveNavLinks, NavLinks } from "@/components/layout/nav-links";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
-import { ButtonLink } from "@/components/ui/button-link";
+import {
+  CurrentUser,
+  LogoutButton,
+  RestaurantName,
+} from "@/features/auth/components/current-user";
 
 /** The app name and logo. Tapping it goes to the dashboard. */
 export function Brand() {
@@ -14,27 +18,9 @@ export function Brand() {
       </span>
       <span className="flex flex-col leading-tight">
         <span className="font-display text-lg font-semibold">Restaurant POS</span>
-        <span className="text-xs text-muted-foreground">my restaurant name</span>
+        <RestaurantName />
       </span>
     </Link>
-  );
-}
-
-/**
- * Who is logged in. Fixed sample values for now; in Step 10 this reads the
- * real logged-in staff member and role.
- */
-function CurrentUser() {
-  return (
-    <div className="flex min-w-0 items-center gap-3">
-      <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent text-sm font-bold text-accent-foreground">
-        DM
-      </span>
-      <span className="flex min-w-0 flex-col leading-tight">
-        <span className="truncate font-semibold">Demo Manager</span>
-        <span className="text-xs text-muted-foreground">Manager</span>
-      </span>
-    </div>
   );
 }
 
@@ -62,9 +48,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <CurrentUser />
             <ThemeToggle />
           </div>
-          <ButtonLink href="/login" variant="ghost" size="sm" className="justify-start">
-            <LogOut aria-hidden="true" /> Log out
-          </ButtonLink>
+          <LogoutButton />
         </div>
       </aside>
 
@@ -75,9 +59,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Brand />
             <div className="flex items-center gap-2">
               <ThemeToggle />
-              <ButtonLink href="/login" variant="ghost" size="icon" aria-label="Log out">
-                <LogOut aria-hidden="true" />
-              </ButtonLink>
+              <LogoutButton compact />
             </div>
           </div>
           <nav aria-label="Main" className="overflow-x-auto px-4 pb-3">

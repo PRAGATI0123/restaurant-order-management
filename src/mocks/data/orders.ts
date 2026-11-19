@@ -1,4 +1,4 @@
-import { DEFAULT_TAX_RATE_BASIS_POINTS } from "@/config/constants";
+import { DEFAULT_TAX_RATE_BASIS_POINTS, RESTAURANT_DETAILS } from "@/config/constants";
 import { calculateBill } from "@/domain/billing/calculate-bill";
 import { settleOrder } from "@/domain/billing/checkout";
 import { quickCashAmounts, type PaymentDraft } from "@/domain/billing/payments";
@@ -182,6 +182,7 @@ function paidEarlier(
     orders: [order],
     parts,
     taxRateBasisPoints: DEFAULT_TAX_RATE_BASIS_POINTS,
+    restaurant: RESTAURANT_DETAILS,
     where: orderWhere(order, (id) => sampleTables.find((t) => t.id === id)?.name),
     invoiceNumber,
     at: new Date(Date.parse(order.createdAt) + 40 * 60_000).toISOString(), // paid 40 min after ordering

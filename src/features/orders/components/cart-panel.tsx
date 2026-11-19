@@ -8,7 +8,6 @@ import { Dialog, DialogFooter } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Field } from "@/components/ui/input";
 import { QuantityStepper } from "@/components/ui/quantity-stepper";
-import { DEFAULT_TAX_RATE_BASIS_POINTS } from "@/config/constants";
 import { calculateBill, itemUnitTotal } from "@/domain/billing/calculate-bill";
 import { cartCount } from "@/domain/orders/cart";
 import { formatRupees } from "@/domain/money";
@@ -16,6 +15,7 @@ import { cn } from "@/lib/utils/cn";
 import { tryAction } from "@/lib/utils/try-action";
 import { useCartStore } from "@/stores/cart-store";
 import type { OrderItem } from "@/types/order";
+import { useTaxRate } from "@/stores/settings-store";
 
 type CartPanelProps = {
   /** "Dine-in · T5", shown under the title. */
@@ -27,6 +27,7 @@ type CartPanelProps = {
 
 /** The order being built: lines, quantities, notes, totals, and Send. */
 export function CartPanel({ summary, onSend, embedded = false }: CartPanelProps) {
+  const taxRate = useTaxRate(); // GST from Settings
   const lines = useCartStore((s) => s.lines);
   const setQuantity = useCartStore((s) => s.setQuantity);
   const setNote = useCartStore((s) => s.setNote);
@@ -38,7 +39,7 @@ export function CartPanel({ summary, onSend, embedded = false }: CartPanelProps)
   // Same function the checkout will use (Step 7), so these numbers always match the bill.
   const bill = calculateBill({
     items: lines,
-    taxRateBasisPoints: DEFAULT_TAX_RATE_BASIS_POINTS,
+    taxRateBasisPoints: taxRate,
   });
   const count = cartCount(lines);
 

@@ -5,6 +5,7 @@ import {
   setDishLinks,
   unlinkEverywhere,
 } from "@/domain/menu/catalog-rules";
+import type { Action } from "@/domain/auth/permissions";
 import { DomainError } from "@/domain/errors";
 import { newId } from "@/lib/utils/id";
 import {
@@ -21,6 +22,7 @@ import type {
   MenuItemVariant,
   ModifierGroup,
 } from "@/types/menu";
+import { requirePermission } from "./auth-store";
 
 /** What the add/edit dish form provides. Sizes, add-ons and options are kept as they are. */
 export type MenuItemDetails = Pick<
@@ -86,133 +88,166 @@ function withIds(rows: PricedInput[], prefix: string): MenuItemVariant[] {
  * That's how React notices something changed and re-draws the screen.
  * The rules themselves live in domain/menu/catalog-rules.ts (and are tested);
  * the store only applies them.
+ *
+ * Every action checks the logged-in role first (see guardActions below):
+ * kitchen staff may mark dishes sold out; only managers edit the menu.
  */
 export const useMenuStore = create<MenuState>()((set, get) => ({
   categories: sampleCategories,
   items: sampleMenuItems,
   addOns: sampleAddOns,
   modifierGroups: sampleModifierGroups,
+  ...guardActions<MenuActions>({
+    // ─── Dishes ────────────────────────────────────────────────────────────────
 
-  // ─── Dishes ────────────────────────────────────────────────────────────────
+    setAvailability: (itemId, isAvailable) =>
+      set((state) => ({
+        items: state.items.map((item) =>
+          item.id === itemId ? { ...item, isAvailable } : item,
+        ),
+      })),
 
-  setAvailability: (itemId, isAvailable) =>
-    set((state) => ({
-      items: state.items.map((item) =>
-        item.id === itemId ? { ...item, isAvailable } : item,
-      ),
-    })),
+    addItem: (details) => {
+      const item: MenuItem = {
+        id: newId("item"),
+        variants: [],
+        addOnIds: [],
+        modifierGroupIds: [],
+        ...details,
+      };
+      set((state) => ({ items: [...state.items, item] }));
+      return item;
+    },
 
-  addItem: (details) => {
-    const item: MenuItem = {
-      id: newId("item"),
-      variants: [],
-      addOnIds: [],
-      modifierGroupIds: [],
-      ...details,
-    };
-    set((state) => ({ items: [...state.items, item] }));
-    return item;
-  },
+    updateItem: (itemId, details) =>
+      set((state) => ({
+        items: state.items.map((item) =>
+          item.id === itemId ? { ...item, ...details } : item,
+        ),
+      })),
 
-  updateItem: (itemId, details) =>
-    set((state) => ({
-      items: state.items.map((item) =>
-        item.id === itemId ? { ...item, ...details } : item,
-      ),
-    })),
+    setSizes: (itemId, sizes) =>
+      set((state) => ({
+        items: state.items.map((item) => {
+          if (item.id !== itemId) return item;
+          const variants = withIds(sizes, "size");
+          // The dish's own price follows its biggest size, so it never looks
+          // cheaper than it is anywhere sizes aren't shown.
+          const pricePaise =
+            variants.length > 0
+              ? Math.max(...variants.map((v) => v.pricePaise))
+              : item.pricePaise;
+          return { ...item, variants, pricePaise };
+        }),
+      })),
 
-  setSizes: (itemId, sizes) =>
-    set((state) => ({
-      items: state.items.map((item) => {
-        if (item.id !== itemId) return item;
-        const variants = withIds(sizes, "size");
-        // The dish's own price follows its biggest size, so it never looks
-        // cheaper than it is anywhere sizes aren't shown.
-        const pricePaise =
-          variants.length > 0
-            ? Math.max(...variants.map((v) => v.pricePaise))
-            : item.pricePaise;
-        return { ...item, variants, pricePaise };
-      }),
-    })),
+    // ─── Categories ────────────────────────────────────────────────────────────
 
-  // ─── Categories ────────────────────────────────────────────────────────────
+    addCategory: (name) => {
+      const category: MenuCategory = {
+        id: newId("cat"),
+        name,
+        sortOrder: get().categories.length, // goes to the end
+      };
+      set((state) => ({ categories: [...state.categories, category] }));
+      return category;
+    },
 
-  addCategory: (name) => {
-    const category: MenuCategory = {
-      id: newId("cat"),
-      name,
-      sortOrder: get().categories.length, // goes to the end
-    };
-    set((state) => ({ categories: [...state.categories, category] }));
-    return category;
-  },
+    renameCategory: (categoryId, name) =>
+      set((state) => ({
+        categories: state.categories.map((c) =>
+          c.id === categoryId ? { ...c, name } : c,
+        ),
+      })),
 
-  renameCategory: (categoryId, name) =>
-    set((state) => ({
-      categories: state.categories.map((c) => (c.id === categoryId ? { ...c, name } : c)),
-    })),
+    moveCategory: (categoryId, direction) =>
+      set((state) => ({
+        categories: moveCategory(state.categories, categoryId, direction),
+      })),
 
-  moveCategory: (categoryId, direction) =>
-    set((state) => ({
-      categories: moveCategory(state.categories, categoryId, direction),
-    })),
+    deleteCategory: (categoryId) => {
+      const { categories, items } = get();
+      const category = categories.find((c) => c.id === categoryId);
+      if (!category) throw new DomainError("That category doesn't exist.");
+      assertCanDeleteCategory(category, items); // throws a readable error if not empty
+      set({
+        // Renumber the rest so the order stays 0, 1, 2…
+        categories: categories
+          .filter((c) => c.id !== categoryId)
+          .sort((a, b) => a.sortOrder - b.sortOrder)
+          .map((c, index) => ({ ...c, sortOrder: index })),
+      });
+    },
 
-  deleteCategory: (categoryId) => {
-    const { categories, items } = get();
-    const category = categories.find((c) => c.id === categoryId);
-    if (!category) throw new DomainError("That category doesn't exist.");
-    assertCanDeleteCategory(category, items); // throws a readable error if not empty
-    set({
-      // Renumber the rest so the order stays 0, 1, 2…
-      categories: categories
-        .filter((c) => c.id !== categoryId)
-        .sort((a, b) => a.sortOrder - b.sortOrder)
-        .map((c, index) => ({ ...c, sortOrder: index })),
-    });
-  },
+    // ─── Shared add-ons ────────────────────────────────────────────────────────
 
-  // ─── Shared add-ons ────────────────────────────────────────────────────────
+    saveAddOn: ({ name, pricePaise, dishIds }, editingId) => {
+      const addOn: AddOn = { id: editingId ?? newId("add"), name, pricePaise };
+      set((state) => ({
+        addOns: editingId
+          ? state.addOns.map((a) => (a.id === editingId ? addOn : a))
+          : [...state.addOns, addOn],
+        items: setDishLinks(state.items, "addOnIds", addOn.id, dishIds),
+      }));
+      return addOn;
+    },
 
-  saveAddOn: ({ name, pricePaise, dishIds }, editingId) => {
-    const addOn: AddOn = { id: editingId ?? newId("add"), name, pricePaise };
-    set((state) => ({
-      addOns: editingId
-        ? state.addOns.map((a) => (a.id === editingId ? addOn : a))
-        : [...state.addOns, addOn],
-      items: setDishLinks(state.items, "addOnIds", addOn.id, dishIds),
-    }));
-    return addOn;
-  },
+    deleteAddOn: (addOnId) =>
+      set((state) => ({
+        addOns: state.addOns.filter((a) => a.id !== addOnId),
+        items: unlinkEverywhere(state.items, "addOnIds", addOnId),
+      })),
 
-  deleteAddOn: (addOnId) =>
-    set((state) => ({
-      addOns: state.addOns.filter((a) => a.id !== addOnId),
-      items: unlinkEverywhere(state.items, "addOnIds", addOnId),
-    })),
+    // ─── Shared option groups ──────────────────────────────────────────────────
 
-  // ─── Shared option groups ──────────────────────────────────────────────────
+    saveOptionGroup: ({ name, required, maxSelect, options, dishIds }, editingId) => {
+      const group: ModifierGroup = {
+        id: editingId ?? newId("mod"),
+        name,
+        minSelect: required ? 1 : 0,
+        maxSelect,
+        options: withIds(options, "opt"),
+      };
+      set((state) => ({
+        modifierGroups: editingId
+          ? state.modifierGroups.map((g) => (g.id === editingId ? group : g))
+          : [...state.modifierGroups, group],
+        items: setDishLinks(state.items, "modifierGroupIds", group.id, dishIds),
+      }));
+      return group;
+    },
 
-  saveOptionGroup: ({ name, required, maxSelect, options, dishIds }, editingId) => {
-    const group: ModifierGroup = {
-      id: editingId ?? newId("mod"),
-      name,
-      minSelect: required ? 1 : 0,
-      maxSelect,
-      options: withIds(options, "opt"),
-    };
-    set((state) => ({
-      modifierGroups: editingId
-        ? state.modifierGroups.map((g) => (g.id === editingId ? group : g))
-        : [...state.modifierGroups, group],
-      items: setDishLinks(state.items, "modifierGroupIds", group.id, dishIds),
-    }));
-    return group;
-  },
-
-  deleteOptionGroup: (groupId) =>
-    set((state) => ({
-      modifierGroups: state.modifierGroups.filter((g) => g.id !== groupId),
-      items: unlinkEverywhere(state.items, "modifierGroupIds", groupId),
-    })),
+    deleteOptionGroup: (groupId) =>
+      set((state) => ({
+        modifierGroups: state.modifierGroups.filter((g) => g.id !== groupId),
+        items: unlinkEverywhere(state.items, "modifierGroupIds", groupId),
+      })),
+  }),
 }));
+
+/** The store's actions (everything except the data). */
+type MenuActions = Omit<MenuState, "categories" | "items" | "addOns" | "modifierGroups">;
+
+/** Which permission each menu action needs. */
+const permissionFor = (action: string): Action =>
+  action === "setAvailability" ? "menu.toggleAvailability" : "menu.edit";
+
+/**
+ * Wraps every action so it checks the logged-in role BEFORE doing anything:
+ *   setAvailability → "menu.toggleAvailability", everything else → "menu.edit".
+ * One wrapper instead of a check copied into twelve actions, so a new action
+ * can't be added without one.
+ */
+function guardActions<T extends object>(actions: T): T {
+  return Object.fromEntries(
+    Object.entries(actions).map(
+      ([name, action]: [string, (...args: unknown[]) => unknown]) => [
+        name,
+        (...args: unknown[]) => {
+          requirePermission(permissionFor(name));
+          return action(...args);
+        },
+      ],
+    ),
+  ) as T;
+}

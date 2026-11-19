@@ -37,6 +37,7 @@ function invoice(
   return {
     id: `inv-${next}`,
     number: next,
+    restaurant: { name: "R", address: "A", phone: "P", gstin: "G" },
     orderId: `o-${next}`,
     orderNumber: next - 900,
     orderType: "dine-in",

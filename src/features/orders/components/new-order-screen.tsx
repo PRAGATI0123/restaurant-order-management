@@ -6,7 +6,6 @@ import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { BottomSheet } from "@/components/ui/dialog";
-import { DEFAULT_TAX_RATE_BASIS_POINTS, DEMO_STAFF_ID } from "@/config/constants";
 import { calculateBill } from "@/domain/billing/calculate-bill";
 import { hasChoices } from "@/domain/menu/menu-rules";
 import { cartCount } from "@/domain/orders/cart";
@@ -25,6 +24,7 @@ import { CartPanel } from "./cart-panel";
 import { ItemChoiceSheet } from "./item-choice-sheet";
 import { MenuBrowser } from "./menu-browser";
 import { OrderSetup } from "./order-setup";
+import { useTaxRate } from "@/stores/settings-store";
 
 /**
  * TAKING AN ORDER
@@ -34,6 +34,7 @@ import { OrderSetup } from "./order-setup";
  * The order then exists with status "new" (and its table is Occupied).
  */
 export function NewOrderScreen() {
+  const taxRate = useTaxRate(); // GST from Settings
   const cart = useCartStore();
   const tables = useServiceStore((s) => s.tables);
   const placeOrder = useServiceStore((s) => s.placeOrder);
@@ -54,7 +55,7 @@ export function NewOrderScreen() {
   const count = cartCount(cart.lines);
   const total = calculateBill({
     items: cart.lines,
-    taxRateBasisPoints: DEFAULT_TAX_RATE_BASIS_POINTS,
+    taxRateBasisPoints: taxRate,
   }).totalPaise;
 
   function pick(item: MenuItem) {
@@ -101,7 +102,6 @@ export function NewOrderScreen() {
         tableId: cart.tableId,
         customerName: cart.customerName,
         delivery,
-        createdBy: DEMO_STAFF_ID,
       });
     } catch (error) {
       // A business rule said no (e.g. the table was just taken by someone else).

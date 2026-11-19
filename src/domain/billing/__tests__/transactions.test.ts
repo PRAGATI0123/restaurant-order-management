@@ -11,6 +11,7 @@ function invoice(id: string, number: number, orderNumber: number): Invoice {
   return {
     id,
     number,
+    restaurant: { name: "R", address: "A", phone: "P", gstin: "G" },
     orderId: `order-${orderNumber}`,
     orderNumber,
     orderType: "dine-in",

@@ -26,6 +26,8 @@ import type { Id } from "@/types/common";
 import { orderWhere } from "@/features/orders/order-display";
 import { KitchenTicket } from "./kitchen-ticket";
 import { SoldOutSheet } from "./sold-out-sheet";
+import { useSettingsStore } from "@/stores/settings-store";
+import { useCan } from "@/features/auth/hooks";
 
 const COLUMN_STYLE: Record<KitchenColumn, { title: string; dot: string; empty: string }> =
   {
@@ -41,6 +43,8 @@ const COLUMN_STYLE: Record<KitchenColumn, { title: string; dot: string; empty: s
  * how many tickets are late, and the "to cook now" count of every dish.
  */
 export function KitchenScreen() {
+  const can = useCan(); // hide what this role can't do (the store checks again)
+  const timing = useSettingsStore((s) => s.kitchenTiming); // amber / red minutes, from Settings
   const orders = useServiceStore((s) => s.orders);
   const tables = useServiceStore((s) => s.tables);
   const setOrderStatus = useServiceStore((s) => s.setOrderStatus);
@@ -51,7 +55,7 @@ export function KitchenScreen() {
 
   const board = useMemo(() => buildKitchenBoard(orders), [orders]);
   const toCook = useMemo(() => allDayCounts(orders), [orders]);
-  const summary = now === null ? undefined : kitchenSummary(board, new Date(now));
+  const summary = now === null ? undefined : kitchenSummary(board, new Date(now), timing);
   const tableName = (id: Id) => tables.find((t) => t.id === id)?.name;
   const ticketCount = KITCHEN_COLUMNS.reduce((sum, c) => sum + board[c].length, 0);
 
@@ -69,20 +73,22 @@ export function KitchenScreen() {
         title="Kitchen Display"
         description="Tap a ticket's button to move it along. The oldest ticket is always on top."
         actions={
-          <Button
-            variant="secondary"
-            onClick={() => setSoldOut((s) => ({ open: true, key: s.key + 1 }))}
-          >
-            <Ban aria-hidden="true" /> Sold out
-            {soldOutCount > 0 && (
-              <Badge variant="danger">
-                {soldOutCount}
-                <span className="sr-only">
-                  {soldOutCount === 1 ? " dish" : " dishes"} sold out now
-                </span>
-              </Badge>
-            )}
-          </Button>
+          can("menu.toggleAvailability") && (
+            <Button
+              variant="secondary"
+              onClick={() => setSoldOut((s) => ({ open: true, key: s.key + 1 }))}
+            >
+              <Ban aria-hidden="true" /> Sold out
+              {soldOutCount > 0 && (
+                <Badge variant="danger">
+                  {soldOutCount}
+                  <span className="sr-only">
+                    {soldOutCount === 1 ? " dish" : " dishes"} sold out now
+                  </span>
+                </Badge>
+              )}
+            </Button>
+          )
         }
       />
 

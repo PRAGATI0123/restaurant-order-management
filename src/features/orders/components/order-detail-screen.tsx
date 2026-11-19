@@ -20,7 +20,6 @@ import { Button } from "@/components/ui/button";
 import { ButtonLink } from "@/components/ui/button-link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { DEFAULT_TAX_RATE_BASIS_POINTS } from "@/config/constants";
 import { calculateBill, itemUnitTotal } from "@/domain/billing/calculate-bill";
 import { invoiceLabel } from "@/domain/billing/checkout";
 import { canAddItems } from "@/domain/orders/order-changes";
@@ -40,6 +39,8 @@ import type { OrderItem, OrderStatus } from "@/types/order";
 import { ORDER_STATUS_BADGE, ORDER_TYPE_LABEL, orderWhere } from "../order-display";
 import { AddItemsSheet } from "./add-items-sheet";
 import { ReasonDialog } from "./reason-dialog";
+import { useTaxRate } from "@/stores/settings-store";
+import { useCan } from "@/features/auth/hooks";
 
 /** The normal path of an order, for the timeline (cancelled is shown separately). */
 const PATH: OrderStatus[] = ["new", "preparing", "ready", "served", "paid"];
@@ -57,6 +58,8 @@ const NEXT_ACTION: Partial<
 };
 
 export function OrderDetailScreen({ orderId }: { orderId: Id }) {
+  const can = useCan(); // hide what this role can't do (the store checks again)
+  const taxRate = useTaxRate(); // GST from Settings
   const orders = useServiceStore((s) => s.orders);
   const tables = useServiceStore((s) => s.tables);
   const setOrderStatus = useServiceStore((s) => s.setOrderStatus);
@@ -94,7 +97,7 @@ export function OrderDetailScreen({ orderId }: { orderId: Id }) {
   const bill = calculateBill({
     items: order.items,
     discount: order.discount,
-    taxRateBasisPoints: DEFAULT_TAX_RATE_BASIS_POINTS,
+    taxRateBasisPoints: taxRate,
   });
   const open = isOrderOpen(order.status);
   const next = NEXT_ACTION[order.status];
@@ -117,21 +120,23 @@ export function OrderDetailScreen({ orderId }: { orderId: Id }) {
         back={{ href: "/orders", label: "Back to orders" }}
         actions={
           <>
-            {next && canMoveOrder(order.status, next.to) && (
-              <Button
-                size="lg"
-                onClick={() => {
-                  if (tryAction(() => setOrderStatus(order.id, next.to))) {
-                    toast.success(
-                      `Order ${order.number} is ${ORDER_STATUS_LABEL[next.to]}`,
-                    );
-                  }
-                }}
-              >
-                <next.icon aria-hidden="true" /> {next.label}
-              </Button>
-            )}
-            {open && (
+            {next &&
+              canMoveOrder(order.status, next.to) &&
+              can(next.to === "served" ? "order.serve" : "kitchen.updateStatus") && (
+                <Button
+                  size="lg"
+                  onClick={() => {
+                    if (tryAction(() => setOrderStatus(order.id, next.to))) {
+                      toast.success(
+                        `Order ${order.number} is ${ORDER_STATUS_LABEL[next.to]}`,
+                      );
+                    }
+                  }}
+                >
+                  <next.icon aria-hidden="true" /> {next.label}
+                </Button>
+              )}
+            {open && can("billing.view") && (
               <ButtonLink
                 href={`/billing/${order.id}`}
                 size="lg"
@@ -140,7 +145,7 @@ export function OrderDetailScreen({ orderId }: { orderId: Id }) {
                 <Receipt aria-hidden="true" /> Checkout
               </ButtonLink>
             )}
-            {invoice && (
+            {invoice && can("billing.view") && (
               <ButtonLink
                 href={`/billing/invoice/${invoice.id}`}
                 size="lg"
@@ -163,7 +168,7 @@ export function OrderDetailScreen({ orderId }: { orderId: Id }) {
                   {ORDER_STATUS_LABEL[order.status]}
                 </Badge>
               </CardTitle>
-              {canAddItems(order) && (
+              {canAddItems(order) && can("order.create") && (
                 <Button variant="secondary" size="sm" onClick={() => setAdding(true)}>
                   <Plus aria-hidden="true" /> Add dishes
                 </Button>
@@ -217,7 +222,7 @@ export function OrderDetailScreen({ orderId }: { orderId: Id }) {
                       >
                         {formatRupees(itemUnitTotal(line) * line.quantity)}
                       </span>
-                      {itemsCancellable && !cancelled && (
+                      {itemsCancellable && !cancelled && can("order.cancel") && (
                         <Button
                           variant="ghost"
                           size="icon"
@@ -237,7 +242,10 @@ export function OrderDetailScreen({ orderId }: { orderId: Id }) {
                 {bill.discountPaise > 0 && (
                   <Row label="Discount" value={`− ${formatRupees(bill.discountPaise)}`} />
                 )}
-                <Row label="Tax (GST 5%)" value={formatRupees(bill.taxPaise)} />
+                <Row
+                  label={`Tax (GST ${taxRate / 100}%)`}
+                  value={formatRupees(bill.taxPaise)}
+                />
                 <div className="flex justify-between text-xl font-semibold">
                   <span>Total</span>
                   <span className="tabular-nums">{formatRupees(bill.totalPaise)}</span>
@@ -248,12 +256,12 @@ export function OrderDetailScreen({ orderId }: { orderId: Id }) {
 
           {open && (
             <div className="flex flex-wrap gap-3">
-              {activeUnits >= 2 && (
+              {activeUnits >= 2 && can("order.split") && (
                 <ButtonLink href={`/orders/${order.id}/split`} variant="secondary">
                   <Split aria-hidden="true" /> Split order
                 </ButtonLink>
               )}
-              {canMoveOrder(order.status, "cancelled") && (
+              {canMoveOrder(order.status, "cancelled") && can("order.cancel") && (
                 <Button variant="danger" onClick={() => setCancellingOrder(true)}>
                   <XCircle aria-hidden="true" /> Cancel order
                 </Button>

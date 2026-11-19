@@ -11,7 +11,7 @@ import { DomainError } from "../errors";
  *  - 15 min or more → late (red): someone should check on it
  *  - Only tickets still in the kitchen ("new" or "preparing") can be late.
  *
- * The minutes are defaults; Settings (Step 18) can change them.
+ * The minutes are defaults; a manager can change them in Settings.
  */
 export type KitchenTiming = {
   warningAfterMinutes: number;

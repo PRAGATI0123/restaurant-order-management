@@ -3,13 +3,17 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { isActivePath, mainNav } from "@/config/nav";
+import { canOpen } from "@/domain/auth/routes";
+import { useCurrentStaff } from "@/features/auth/hooks";
 import { cn } from "@/lib/utils/cn";
 
 type Variant = "sidebar" | "pills";
 
 /**
- * The list of main links. `pathname` decides which one is highlighted;
- * null means "don't highlight anything" (used while the URL is still unknown).
+ * The list of main links: only the pages the logged-in role may open (a waiter
+ * never sees Billing or Reports). Nobody logged in yet → no links.
+ * `pathname` decides which one is highlighted; null means "don't highlight
+ * anything" (used while the URL is still unknown).
  */
 export function NavLinks({
   pathname,
@@ -18,9 +22,11 @@ export function NavLinks({
   pathname: string | null;
   variant: Variant;
 }) {
+  const me = useCurrentStaff();
+  const links = me ? mainNav.filter((item) => canOpen(me.role, item.href)) : [];
   return (
     <ul className={cn(variant === "sidebar" ? "flex flex-col gap-1" : "flex gap-2")}>
-      {mainNav.map(({ href, label, icon: Icon }) => {
+      {links.map(({ href, label, icon: Icon }) => {
         const active = pathname !== null && isActivePath(pathname, href);
         return (
           <li key={href} className="shrink-0">
