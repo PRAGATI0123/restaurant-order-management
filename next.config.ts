@@ -4,6 +4,9 @@ const nextConfig: NextConfig = {
   /* config options here */
   cacheComponents: true,
   partialPrefetching: true,
+  // Hide the round "N" development badge: it sat on top of the sidebar's
+  // "Log out" button. Dev-only; Next.js still shows build and runtime errors.
+  devIndicators: false,
   experimental: {
     instantInsights: {
       // This POS draws its pages in the browser, from data on the device and a
