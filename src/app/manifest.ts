@@ -14,6 +14,10 @@ export default function manifest(): MetadataRoute.Manifest {
     display: "standalone",
     background_color: "#f6f1e9",
     theme_color: "#0e6b6e",
-    icons: [{ src: "/favicon.ico", sizes: "any", type: "image/x-icon" }],
+    // Generated from the logo component by app/icon.tsx (no image files).
+    icons: [
+      { src: "/icon/192", sizes: "192x192", type: "image/png" },
+      { src: "/icon/512", sizes: "512x512", type: "image/png" },
+    ],
   };
 }

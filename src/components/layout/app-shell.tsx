@@ -1,7 +1,7 @@
-import { UtensilsCrossed } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
 import { ActiveNavLinks, NavLinks } from "@/components/layout/nav-links";
+import { LogoMark } from "@/components/brand/logo-mark";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { SyncStatus } from "@/features/sync/components/sync-status";
 import {
@@ -14,9 +14,8 @@ import {
 export function Brand() {
   return (
     <Link href="/dashboard" className="flex items-center gap-3">
-      <span className="flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-        <UtensilsCrossed className="size-5" aria-hidden="true" />
-      </span>
+      {/* The same drawing as the browser-tab icon (app/icon.tsx) */}
+      <LogoMark size={40} className="shrink-0" />
       <span className="flex flex-col leading-tight">
         <span className="font-display text-lg font-semibold">Restaurant POS</span>
         <RestaurantName />
