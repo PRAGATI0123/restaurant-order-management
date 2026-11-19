@@ -1,5 +1,14 @@
 # Restaurant POS & Table Management
 
+[![CI](https://github.com/PRAGATI0123/restaurant-order-management/actions/workflows/ci.yml/badge.svg)](https://github.com/PRAGATI0123/restaurant-order-management/actions/workflows/ci.yml)
+[![Live demo](https://img.shields.io/badge/live%20demo-vercel-000000?logo=vercel)](https://restaurant-order-management-brown.vercel.app/)
+![Next.js 16](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs)
+![TypeScript strict](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
+![Tests](https://img.shields.io/badge/tests-438%20passing-2e7d32)
+
+**[▶ Open the live demo](https://restaurant-order-management-brown.vercel.app/)**: log in as
+**Pragati Gautam** (PIN **1234**), then tap **Load sample service** to see a busy evening.
+
 A touchscreen point-of-sale for a restaurant: a live floor plan, orders for dine-in,
 takeaway and delivery, a kitchen display with timers, checkout with discounts and split
 payments, invoices, reports, and screens for each staff role. It is **offline-first**:
