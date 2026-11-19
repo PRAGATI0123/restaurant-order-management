@@ -236,9 +236,10 @@ export const useMenuStore = create<MenuState>()(
         addOns: s.addOns,
         modifierGroups: s.modifierGroups,
       }),
-      // Version 2 added dish photos. A menu saved before that keeps all its
-      // changes; the sample dishes just get their photo back.
-      { version: 2, migrate: (saved) => addSamplePhotos(saved as SavedMenu) },
+      // Version 2 added dish photos; version 3 the last one (the brownie).
+      // A menu saved before keeps all its changes; sample dishes without a
+      // photo get theirs. (Screens also fall back to it: features/menu/dish-photo.)
+      { version: 3, migrate: (saved) => addSamplePhotos(saved as SavedMenu) },
     ),
   ),
 );

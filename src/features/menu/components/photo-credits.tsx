@@ -1,5 +1,6 @@
 import { MENU_PHOTOS } from "@/mocks/data/menu-photos";
 import type { MenuItem } from "@/types/menu";
+import { dishPhoto } from "../dish-photo";
 
 /**
  * Who took each sample dish photo, and under which licence. The photos are
@@ -7,7 +8,7 @@ import type { MenuItem } from "@/types/menu";
  * here on the Menu page, folded away until someone opens it.
  */
 export function PhotoCredits({ items }: { items: MenuItem[] }) {
-  const credited = items.filter((item) => item.imageUrl && MENU_PHOTOS[item.id]);
+  const credited = items.filter((item) => dishPhoto(item) && MENU_PHOTOS[item.id]);
   if (credited.length === 0) return null;
 
   return (

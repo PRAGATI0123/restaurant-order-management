@@ -20,6 +20,7 @@ import type { MenuItem } from "@/types/menu";
 import type { OrderItem } from "@/types/order";
 import { VegMark } from "@/features/menu/components/veg-mark";
 import Image from "next/image";
+import { dishPhoto } from "@/features/menu/dish-photo";
 
 /**
  * The menu for taking orders: search, category tabs and big dish tiles.
@@ -98,6 +99,7 @@ export function MenuBrowser({
           {visible.map((item) => {
             const count = inCart.get(item.id) ?? 0;
             const soldOut = !item.isAvailable;
+            const photo = dishPhoto(item);
             return (
               <li key={item.id}>
                 <button
@@ -113,11 +115,11 @@ export function MenuBrowser({
                     soldOut && "cursor-not-allowed opacity-50",
                   )}
                 >
-                  {item.imageUrl && (
+                  {photo && (
                     // A small photo helps find the dish fast; decorative (the name is below).
                     <span className="relative -mx-3 -mt-3 mb-1 block aspect-[16/9] overflow-hidden rounded-t-[14px]">
                       <Image
-                        src={item.imageUrl}
+                        src={photo}
                         alt=""
                         fill
                         sizes="(min-width: 1280px) 20vw, (min-width: 640px) 30vw, 50vw"

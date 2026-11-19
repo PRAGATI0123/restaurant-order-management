@@ -11,6 +11,7 @@ import { formatPrice } from "@/domain/money";
 import { cn } from "@/lib/utils/cn";
 import type { MenuItem } from "@/types/menu";
 import { VegMark } from "./veg-mark";
+import { dishPhoto } from "../dish-photo";
 
 /** "Paneer Butter Masala" → "PB". Shown when a dish has no photo. */
 function initials(name: string): string {
@@ -48,6 +49,7 @@ export function MenuItemCard({
 }: MenuItemCardProps) {
   const choices = choicesSummary(item);
   const soldOut = !item.isAvailable;
+  const photo = dishPhoto(item);
 
   return (
     <Card className="flex h-full flex-col overflow-hidden">
@@ -58,10 +60,10 @@ export function MenuItemCard({
           soldOut && "grayscale",
         )}
       >
-        {item.imageUrl ? (
+        {photo ? (
           // Decorative: the dish name is written right below, so alt="".
           <Image
-            src={item.imageUrl}
+            src={photo}
             alt=""
             fill
             sizes="(min-width: 1280px) 25vw, (min-width: 768px) 33vw, 50vw"

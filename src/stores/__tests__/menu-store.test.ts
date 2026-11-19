@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { dishPhoto } from "@/features/menu/dish-photo";
 import { addSamplePhotos, useMenuStore } from "@/stores/menu-store";
 import { loginAs, resetAuth } from "./login-as";
 
@@ -136,5 +137,13 @@ describe("menu photos", () => {
       imageUrl: old.items[0]!.imageUrl,
     });
     expect(upgraded.items[1]?.imageUrl).toBeUndefined(); // not a sample dish
+  });
+});
+
+describe("dishPhoto", () => {
+  it("falls back to the sample photo when saved data has none", () => {
+    expect(dishPhoto({ id: "item-brownie" })).toBe("/images/menu/brownie.jpg");
+    expect(dishPhoto({ id: "item-brownie", imageUrl: "/own.jpg" })).toBe("/own.jpg");
+    expect(dishPhoto({ id: "item-added-later" })).toBeUndefined();
   });
 });
