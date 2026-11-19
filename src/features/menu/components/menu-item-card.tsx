@@ -1,6 +1,7 @@
 "use client";
 
 import { Pencil } from "lucide-react";
+import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -11,7 +12,7 @@ import { cn } from "@/lib/utils/cn";
 import type { MenuItem } from "@/types/menu";
 import { VegMark } from "./veg-mark";
 
-/** "Paneer Butter Masala" → "PB". Shown in the tile until items have photos. */
+/** "Paneer Butter Masala" → "PB". Shown when a dish has no photo. */
 function initials(name: string): string {
   return name
     .split(/\s+/)
@@ -57,16 +58,30 @@ export function MenuItemCard({
           soldOut && "grayscale",
         )}
       >
-        <span
-          className={cn(
-            "font-display text-4xl font-semibold text-wood",
-            soldOut && "opacity-40",
-          )}
-          aria-hidden="true"
-        >
-          {initials(item.name)}
-        </span>
-        <VegMark isVeg={item.isVeg} className="absolute top-3 left-3" />
+        {item.imageUrl ? (
+          // Decorative: the dish name is written right below, so alt="".
+          <Image
+            src={item.imageUrl}
+            alt=""
+            fill
+            sizes="(min-width: 1280px) 25vw, (min-width: 768px) 33vw, 50vw"
+            className={cn("object-cover", soldOut && "opacity-60")}
+          />
+        ) : (
+          <span
+            className={cn(
+              "font-display text-4xl font-semibold text-wood",
+              soldOut && "opacity-40",
+            )}
+            aria-hidden="true"
+          >
+            {initials(item.name)}
+          </span>
+        )}
+        <VegMark
+          isVeg={item.isVeg}
+          className="absolute top-3 left-3 rounded-sm bg-surface/90"
+        />
         {soldOut && (
           <Badge variant="danger" className="absolute top-3 right-3">
             Sold out

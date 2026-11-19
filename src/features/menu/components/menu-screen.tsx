@@ -21,6 +21,7 @@ import { useMenuStore } from "@/stores/menu-store";
 import type { MenuItem } from "@/types/menu";
 import { MenuItemCard } from "./menu-item-card";
 import { MenuItemFormDialog } from "./menu-item-form-dialog";
+import { PhotoCredits } from "./photo-credits";
 import { useCan } from "@/features/auth/hooks";
 
 /** Which form is open: none, "add", or "edit" a given item. */
@@ -202,6 +203,8 @@ export function MenuScreen() {
           }
         />
       )}
+
+      <PhotoCredits items={items} />
 
       <MenuItemFormDialog
         key={formKey}

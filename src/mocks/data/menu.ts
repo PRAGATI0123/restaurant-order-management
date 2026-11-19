@@ -1,4 +1,5 @@
 import type { AddOn, MenuCategory, MenuItem, ModifierGroup } from "@/types/menu";
+import { MENU_PHOTOS } from "./menu-photos";
 
 /**
  * SAMPLE MENU, so the app is useful from the first launch.
@@ -65,16 +66,21 @@ const iceCream: AddOn = {
 };
 export const sampleAddOns: AddOn[] = [extraCheese, extraButter, extraGravy, iceCream];
 
-/** Builds an item with the common defaults, so the list below stays short. */
+/**
+ * Builds an item with the common defaults, so the list below stays short.
+ * Each sample dish also gets its photo (menu-photos.ts), if it has one.
+ */
 function item(
   fields: Pick<MenuItem, "id" | "name" | "categoryId" | "pricePaise" | "isVeg"> &
     Partial<MenuItem>,
 ): MenuItem {
+  const photo = MENU_PHOTOS[fields.id];
   return {
     isAvailable: true,
     variants: [],
     addOnIds: [],
     modifierGroupIds: [],
+    ...(photo ? { imageUrl: photo.src } : {}),
     ...fields,
   };
 }

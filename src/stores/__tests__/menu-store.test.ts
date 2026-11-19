@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { useMenuStore } from "@/stores/menu-store";
+import { addSamplePhotos, useMenuStore } from "@/stores/menu-store";
 import { loginAs, resetAuth } from "./login-as";
 
 // Zustand stores work outside React too: getState() reads, actions write.
@@ -107,5 +107,34 @@ describe("menu store: sizes", () => {
 
     store().setSizes("item-paneer-tikka", []);
     expect(dish("item-paneer-tikka").variants).toEqual([]);
+  });
+});
+
+describe("menu photos", () => {
+  it("gives every sample dish a photo", () => {
+    expect(
+      store()
+        .items.filter((i) => !i.imageUrl)
+        .map((i) => i.name),
+    ).toEqual([]);
+  });
+
+  it("upgrades a menu saved before photos existed, keeping its changes", () => {
+    const old = useMenuStore.getInitialState();
+    const savedWithoutPhotos = {
+      categories: old.categories,
+      addOns: old.addOns,
+      modifierGroups: old.modifierGroups,
+      items: [
+        { ...old.items[0]!, imageUrl: undefined, name: "Paneer Tikka (renamed)" },
+        { ...old.items[1]!, id: "item-added-later", imageUrl: undefined },
+      ],
+    };
+    const upgraded = addSamplePhotos(savedWithoutPhotos);
+    expect(upgraded.items[0]).toMatchObject({
+      name: "Paneer Tikka (renamed)",
+      imageUrl: old.items[0]!.imageUrl,
+    });
+    expect(upgraded.items[1]?.imageUrl).toBeUndefined(); // not a sample dish
   });
 });

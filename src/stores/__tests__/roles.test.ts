@@ -18,16 +18,16 @@ beforeEach(() => {
 describe("logging in", () => {
   it("has one user per role, all with the same PIN 1234", () => {
     expect(useAuthStore.getState().staff.map((s) => [s.name, s.role, s.pin])).toEqual([
-      ["User 1", "manager", "1234"],
-      ["User 2", "cashier", "1234"],
-      ["User 3", "waiter", "1234"],
-      ["User 4", "kitchen", "1234"],
+      ["Pragati Gautam", "manager", "1234"],
+      ["Ananya Iyer", "cashier", "1234"],
+      ["Vikram Joshi", "waiter", "1234"],
+      ["Farhan Qureshi", "kitchen", "1234"],
     ]);
   });
 
   it("logs a user in with the PIN, and out again", () => {
     const waiter = useAuthStore.getState().login("staff-waiter", "1234");
-    expect(waiter).toMatchObject({ name: "User 3", role: "waiter" });
+    expect(waiter).toMatchObject({ name: "Vikram Joshi", role: "waiter" });
     expect(useAuthStore.getState().currentStaffId).toBe("staff-waiter");
     useAuthStore.getState().logout();
     expect(useAuthStore.getState().currentStaffId).toBeUndefined();

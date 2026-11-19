@@ -19,6 +19,7 @@ import { useMenuStore } from "@/stores/menu-store";
 import type { MenuItem } from "@/types/menu";
 import type { OrderItem } from "@/types/order";
 import { VegMark } from "@/features/menu/components/veg-mark";
+import Image from "next/image";
 
 /**
  * The menu for taking orders: search, category tabs and big dish tiles.
@@ -112,6 +113,18 @@ export function MenuBrowser({
                     soldOut && "cursor-not-allowed opacity-50",
                   )}
                 >
+                  {item.imageUrl && (
+                    // A small photo helps find the dish fast; decorative (the name is below).
+                    <span className="relative -mx-3 -mt-3 mb-1 block aspect-[16/9] overflow-hidden rounded-t-[14px]">
+                      <Image
+                        src={item.imageUrl}
+                        alt=""
+                        fill
+                        sizes="(min-width: 1280px) 20vw, (min-width: 640px) 30vw, 50vw"
+                        className="object-cover"
+                      />
+                    </span>
+                  )}
                   <span className="flex items-start justify-between gap-2">
                     <VegMark isVeg={item.isVeg} />
                     {count > 0 && (

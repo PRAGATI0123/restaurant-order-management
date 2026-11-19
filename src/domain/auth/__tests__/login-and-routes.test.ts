@@ -9,11 +9,11 @@ import {
 import { actionForPath, canOpen, homeFor } from "@/domain/auth/routes";
 import type { Staff } from "@/types/staff";
 
-const user: Staff = { id: "u3", name: "User 3", role: "waiter", pin: "1234" };
+const user: Staff = { id: "u3", name: "Vikram Joshi", role: "waiter", pin: "1234" };
 
 describe("verifyPin", () => {
   it("lets the user in with the right PIN", () => {
-    expect(verifyPin(user, "1234").name).toBe("User 3");
+    expect(verifyPin(user, "1234").name).toBe("Vikram Joshi");
   });
 
   it("refuses a wrong PIN without showing the right one", () => {

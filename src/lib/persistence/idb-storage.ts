@@ -48,16 +48,22 @@ const idbStateStorage: StateStorage = {
  * The options every saved store shares:
  *  - name: its key in the database ("pos-service", "pos-menu", …)
  *  - skipHydration: don't read the saved data on the server, or straight away
- *    on load; <DataGate> reads ALL stores once the page is in the browser, and
- *    shows a loading screen until they're back.
- *  - version: bump it if the saved shape ever changes, to start fresh.
+ *    on load; loadSavedData() reads ALL stores once the page is in the browser,
+ *    and AuthGate shows a loading screen until they're back.
+ *  - version + migrate: when the saved shape changes, bump the version and
+ *    say how to upgrade data saved by an older version (instead of losing it).
  */
-export function persistOptions<S, P>(name: string, partialize: (state: S) => P) {
+export function persistOptions<S, P>(
+  name: string,
+  partialize: (state: S) => P,
+  upgrade?: { version: number; migrate: (saved: unknown, fromVersion: number) => P },
+) {
   return {
     name,
-    version: 1,
+    version: upgrade?.version ?? 1,
     storage: createJSONStorage<P>(() => idbStateStorage),
     partialize,
     skipHydration: true,
+    ...(upgrade ? { migrate: upgrade.migrate } : {}),
   };
 }

@@ -9,7 +9,7 @@ import { useAuthStore } from "@/stores/auth-store";
 import { useSettingsStore } from "@/stores/settings-store";
 import { useCurrentStaff } from "../hooks";
 
-/** "User 1" → "U1" */
+/** "Pragati Gautam" → "PG" */
 function initials(name: string): string {
   return name
     .split(/\s+/)
@@ -31,7 +31,7 @@ export function CurrentUser() {
         {initials(me.name)}
       </span>
       <span className="flex min-w-0 flex-col leading-tight">
-        <span className="truncate font-semibold">{me.name}</span>
+        <span className="font-semibold break-words">{me.name}</span>
         <span className="text-xs text-muted-foreground">{ROLE_LABEL[me.role]}</span>
       </span>
     </div>

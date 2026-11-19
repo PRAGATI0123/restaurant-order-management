@@ -52,4 +52,9 @@ export type MenuItem = {
    */
   addOnIds: Id[];
   modifierGroupIds: Id[];
+  /**
+   * A photo of the dish ("/images/menu/dal-makhani.jpg"). Only the sample
+   * dishes have one; without it the card shows the dish's initials.
+   */
+  imageUrl?: string;
 };

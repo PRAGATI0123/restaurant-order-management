@@ -25,6 +25,7 @@ import type {
 import { requirePermission } from "./auth-store";
 import { persist } from "zustand/middleware";
 import { persistOptions } from "@/lib/persistence/idb-storage";
+import { MENU_PHOTOS } from "@/mocks/data/menu-photos";
 
 /** What the add/edit dish form provides. Sizes, add-ons and options are kept as they are. */
 export type MenuItemDetails = Pick<
@@ -227,12 +228,18 @@ export const useMenuStore = create<MenuState>()(
           })),
       }),
     }),
-    persistOptions("pos-menu", (s: MenuState) => ({
-      categories: s.categories,
-      items: s.items,
-      addOns: s.addOns,
-      modifierGroups: s.modifierGroups,
-    })),
+    persistOptions(
+      "pos-menu",
+      (s: MenuState) => ({
+        categories: s.categories,
+        items: s.items,
+        addOns: s.addOns,
+        modifierGroups: s.modifierGroups,
+      }),
+      // Version 2 added dish photos. A menu saved before that keeps all its
+      // changes; the sample dishes just get their photo back.
+      { version: 2, migrate: (saved) => addSamplePhotos(saved as SavedMenu) },
+    ),
   ),
 );
 
@@ -261,4 +268,18 @@ function guardActions<T extends object>(actions: T): T {
       ],
     ),
   ) as T;
+}
+
+type SavedMenu = Pick<MenuState, "categories" | "items" | "addOns" | "modifierGroups">;
+
+/** Gives sample dishes saved without a photo their photo (menu version 1 → 2). */
+export function addSamplePhotos(saved: SavedMenu): SavedMenu {
+  return {
+    ...saved,
+    items: saved.items.map((item) =>
+      item.imageUrl || !MENU_PHOTOS[item.id]
+        ? item
+        : { ...item, imageUrl: MENU_PHOTOS[item.id]!.src },
+    ),
+  };
 }
