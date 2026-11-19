@@ -19,7 +19,7 @@ describe("logging in", () => {
   it("has one user per role, all with the same PIN 1234", () => {
     expect(useAuthStore.getState().staff.map((s) => [s.name, s.role, s.pin])).toEqual([
       ["Pragati Gautam", "manager", "1234"],
-      ["Ananya Iyer", "cashier", "1234"],
+      ["Arushi Sharma", "cashier", "1234"],
       ["Vikram Joshi", "waiter", "1234"],
       ["Farhan Qureshi", "kitchen", "1234"],
     ]);

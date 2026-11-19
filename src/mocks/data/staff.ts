@@ -9,7 +9,7 @@ export const SHARED_PIN = "1234";
 /** The users on the login screen: one per role. Pragati Gautam runs the restaurant. */
 export const sampleStaff: Staff[] = [
   { id: "staff-manager", name: "Pragati Gautam", role: "manager", pin: SHARED_PIN },
-  { id: "staff-cashier", name: "Ananya Iyer", role: "cashier", pin: SHARED_PIN },
+  { id: "staff-cashier", name: "Arushi Sharma", role: "cashier", pin: SHARED_PIN },
   { id: "staff-waiter", name: "Vikram Joshi", role: "waiter", pin: SHARED_PIN },
   { id: "staff-kitchen", name: "Farhan Qureshi", role: "kitchen", pin: SHARED_PIN },
 ];
