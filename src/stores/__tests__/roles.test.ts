@@ -16,18 +16,16 @@ beforeEach(() => {
 });
 
 describe("logging in", () => {
-  it("logs in with the right PIN and out again", () => {
-    const meera = useAuthStore.getState().login("staff-manager", "1234");
-    expect(meera.name).toBe("Meera Kapoor");
-    expect(useAuthStore.getState().currentStaffId).toBe("staff-manager");
+  it("logs the owner in with PIN 1234, and out again", () => {
+    const owner = useAuthStore.getState().login("1234");
+    expect(owner).toMatchObject({ name: "Pragati Gautam", role: "manager" });
+    expect(useAuthStore.getState().currentStaffId).toBe("staff-owner");
     useAuthStore.getState().logout();
     expect(useAuthStore.getState().currentStaffId).toBeUndefined();
   });
 
   it("stays logged out on a wrong PIN", () => {
-    expect(() => useAuthStore.getState().login("staff-manager", "0000")).toThrow(
-      "Wrong PIN",
-    );
+    expect(() => useAuthStore.getState().login("0000")).toThrow("Wrong PIN");
     expect(useAuthStore.getState().currentStaffId).toBeUndefined();
   });
 
@@ -36,6 +34,9 @@ describe("logging in", () => {
   });
 });
 
+// Only the owner (a manager) logs in today, but every action still checks the
+// role. These tests act as the other roles to prove those checks hold, so
+// staff with smaller roles can be added later safely.
 describe("each role can only do its own work (checked in the store, not just the screen)", () => {
   it("a waiter serves food but can't take money or cancel", () => {
     loginAs("waiter");
@@ -84,7 +85,7 @@ describe("each role can only do its own work (checked in the store, not just the
   it("records WHO did each step in the order's timeline", () => {
     loginAs("kitchen");
     service().setOrderStatus("order-103", "preparing");
-    expect(order("order-103").statusHistory.at(-1)?.by).toBe("staff-kitchen");
+    expect(order("order-103").statusHistory.at(-1)?.by).toBe("test-kitchen");
   });
 
   it("only a manager changes settings", () => {
@@ -115,25 +116,15 @@ describe("settings take effect", () => {
       "Choose one of the GST rates",
     );
   });
-
-  it("a manager adds staff; nobody removes themselves or the last manager", () => {
-    loginAs("manager");
-    const auth = () => useAuthStore.getState();
-    const asha = auth().saveStaff({ name: "Asha", role: "waiter", pin: "5678" });
-    expect(auth().staff.map((s) => s.name)).toContain("Asha");
-    expect(() => auth().removeStaff("staff-manager")).toThrow("can't remove yourself");
-    auth().removeStaff(asha.id);
-    expect(auth().staff).toHaveLength(4);
-  });
 });
 
 describe("logging out on purpose", () => {
   it("is remembered until the next login, so the next person starts fresh", () => {
     const auth = () => useAuthStore.getState();
-    auth().login("staff-waiter", "3333");
+    auth().login("1234");
     auth().logout();
     expect(auth().loggedOutByUser).toBe(true);
-    auth().login("staff-cashier", "2222");
+    auth().login("1234");
     expect(auth().loggedOutByUser).toBe(false);
   });
 });

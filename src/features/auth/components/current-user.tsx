@@ -9,7 +9,7 @@ import { useAuthStore } from "@/stores/auth-store";
 import { useSettingsStore } from "@/stores/settings-store";
 import { useCurrentStaff } from "../hooks";
 
-/** "Meera Kapoor" → "MK" */
+/** "Pragati Gautam" → "PG" */
 function initials(name: string): string {
   return name
     .split(/\s+/)

@@ -3,7 +3,6 @@ import {
   validateKitchenTiming,
   validateRestaurantDetails,
 } from "@/lib/validation/settings";
-import { validateStaff } from "@/lib/validation/staff";
 
 const details = {
   name: "The Teal Chair",
@@ -57,32 +56,5 @@ describe("kitchen timing", () => {
       lateAfterMinutes: "0",
     });
     expect(odd.ok).toBe(false);
-  });
-});
-
-describe("staff form", () => {
-  const existing = [{ id: "m", name: "Meera Kapoor" }];
-
-  it("needs a name, a role and a 4-digit PIN", () => {
-    const result = validateStaff({ name: "", role: "", pin: "12" }, existing);
-    expect(result.ok ? {} : result.errors).toEqual({
-      name: "Name must be at least 2 characters.",
-      role: "Choose a role.",
-      pin: "The PIN must be exactly 4 digits.",
-    });
-  });
-
-  it("refuses a name that's already on the list (login picks by name)", () => {
-    const result = validateStaff(
-      { name: "meera  kapoor", role: "waiter", pin: "5678" },
-      existing,
-    );
-    expect(result.ok ? {} : result.errors).toEqual({
-      name: "Meera Kapoor is already on the staff list.",
-    });
-    expect(
-      validateStaff({ name: "Meera Kapoor", role: "manager", pin: "5678" }, existing, "m")
-        .ok,
-    ).toBe(true);
   });
 });

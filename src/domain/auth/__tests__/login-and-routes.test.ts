@@ -7,25 +7,17 @@ import {
   verifyPin,
 } from "@/domain/auth/login";
 import { actionForPath, canOpen, homeFor } from "@/domain/auth/routes";
-import { removeStaffMember, saveStaffMember } from "@/domain/auth/staff-rules";
 import type { Staff } from "@/types/staff";
 
-const staff: Staff[] = [
-  { id: "m", name: "Meera", role: "manager", pin: "1234" },
-  { id: "w", name: "Sunil", role: "waiter", pin: "3333" },
-];
+const owner: Staff = { id: "o", name: "Pragati Gautam", role: "manager", pin: "1234" };
 
 describe("verifyPin", () => {
-  it("lets the right person in with their own PIN", () => {
-    expect(verifyPin(staff, "w", "3333").name).toBe("Sunil");
+  it("lets the owner in with the right PIN", () => {
+    expect(verifyPin(owner, "1234").name).toBe("Pragati Gautam");
   });
 
-  it("refuses another person's PIN without saying whose it is", () => {
-    expect(() => verifyPin(staff, "w", "1234")).toThrow("Wrong PIN. Try again.");
-  });
-
-  it("refuses a staff member who was removed", () => {
-    expect(() => verifyPin(staff, "gone", "1234")).toThrow("doesn't exist");
+  it("refuses a wrong PIN without showing the right one", () => {
+    expect(() => verifyPin(owner, "4321")).toThrow("Wrong PIN. Try again.");
   });
 });
 
@@ -74,36 +66,5 @@ describe("which pages each role may open", () => {
     expect(homeFor("cashier")).toBe("/dashboard");
     expect(homeFor("waiter")).toBe("/tables");
     expect(homeFor("kitchen")).toBe("/kitchen");
-  });
-});
-
-describe("staff rules", () => {
-  it("adds and edits staff", () => {
-    const added = saveStaffMember(staff, {
-      id: "c",
-      name: "Ravi",
-      role: "cashier",
-      pin: "2222",
-    });
-    expect(added).toHaveLength(3);
-    const edited = saveStaffMember(added, {
-      id: "c",
-      name: "Ravi K",
-      role: "cashier",
-      pin: "2468",
-    });
-    expect(edited.find((s) => s.id === "c")?.name).toBe("Ravi K");
-  });
-
-  it("always keeps at least one manager", () => {
-    expect(() =>
-      saveStaffMember(staff, { id: "m", name: "Meera", role: "waiter", pin: "1234" }),
-    ).toThrow("Keep at least one manager");
-    expect(() => removeStaffMember(staff, "m", "w")).toThrow("Keep at least one manager");
-  });
-
-  it("won't let you remove yourself", () => {
-    expect(() => removeStaffMember(staff, "w", "w")).toThrow("can't remove yourself");
-    expect(removeStaffMember(staff, "w", "m")).toEqual([staff[0]]);
   });
 });

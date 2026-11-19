@@ -2,14 +2,13 @@ import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { verifyPin } from "@/domain/auth/login";
 import { assertCan, type Action } from "@/domain/auth/permissions";
-import { removeStaffMember, saveStaffMember } from "@/domain/auth/staff-rules";
 import { DomainError } from "@/domain/errors";
-import { newId } from "@/lib/utils/id";
-import { sampleStaff } from "@/mocks/data/staff";
+import { OWNER_ACCOUNT } from "@/mocks/data/staff";
 import type { Id } from "@/types/common";
 import type { Staff } from "@/types/staff";
 
 type AuthState = {
+  /** Everyone who can act in the app. Today that's one account: the owner. */
   staff: Staff[];
   /** Who is logged in on this device, if anyone. */
   currentStaffId?: Id;
@@ -19,20 +18,20 @@ type AuthState = {
    */
   loggedOutByUser: boolean;
 
-  /** Checks the PIN and logs in. Throws DomainError on a wrong PIN. */
-  login: (staffId: Id, pin: string) => Staff;
+  /** Checks the PIN and logs the owner in. Throws DomainError on a wrong PIN. */
+  login: (pin: string) => Staff;
   logout: () => void;
-  /** Add (no id) or edit (with id) a staff member. Managers only. */
-  saveStaff: (member: Omit<Staff, "id"> & { id?: Id }) => Staff;
-  removeStaff: (staffId: Id) => void;
 };
 
 /**
- * THE AUTH STORE: the staff list and who is logged in.
+ * THE AUTH STORE: who is logged in.
+ *
+ * There is ONE account (the owner, Pragati Gautam, PIN 1234). The role and
+ * permission checks still run on every action, so more staff with their own
+ * roles can be added later without changing any screen.
  *
  * Only the login itself (currentStaffId) is remembered, in sessionStorage:
- * it survives a page refresh but not closing the browser tab, like a shift
- * at a shared till. The staff list is saved with everything else in Step 19.
+ * it survives a page refresh but not closing the browser tab.
  *
  * `skipHydration`: the server has no sessionStorage, so the login is read
  * back only in the browser, by <AuthGate> once the page has loaded. That
@@ -41,29 +40,18 @@ type AuthState = {
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
-      staff: sampleStaff,
+      staff: [OWNER_ACCOUNT],
       currentStaffId: undefined,
       loggedOutByUser: false,
 
-      login: (staffId, pin) => {
-        const member = verifyPin(get().staff, staffId, pin);
+      login: (pin) => {
+        const owner = get().staff.find((s) => s.id === OWNER_ACCOUNT.id) ?? OWNER_ACCOUNT;
+        const member = verifyPin(owner, pin);
         set({ currentStaffId: member.id, loggedOutByUser: false });
         return member;
       },
 
       logout: () => set({ currentStaffId: undefined, loggedOutByUser: true }),
-
-      saveStaff: ({ id, ...details }) => {
-        requirePermission("settings.edit");
-        const member: Staff = { id: id ?? newId("staff"), ...details };
-        set({ staff: saveStaffMember(get().staff, member) });
-        return member;
-      },
-
-      removeStaff: (staffId) => {
-        requirePermission("settings.edit");
-        set({ staff: removeStaffMember(get().staff, staffId, get().currentStaffId) });
-      },
     }),
     {
       name: "restaurant-pos-session",

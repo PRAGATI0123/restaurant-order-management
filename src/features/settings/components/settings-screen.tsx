@@ -1,17 +1,15 @@
 "use client";
 
-import { Pencil, Plus, RotateCcw, Save, Trash2 } from "lucide-react";
+import { RotateCcw, Save } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useState } from "react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/page-header";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChipGroup } from "@/components/ui/chip-group";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Field } from "@/components/ui/input";
-import { ROLE_LABEL } from "@/domain/auth/permissions";
 import { useNow } from "@/lib/hooks/use-now";
 import { tryAction } from "@/lib/utils/try-action";
 import {
@@ -20,13 +18,9 @@ import {
   validateRestaurantDetails,
   type KitchenTimingValues,
 } from "@/lib/validation/settings";
-import { useAuthStore } from "@/stores/auth-store";
 import { resetDemoData } from "@/stores/reset-demo";
 import { useSettingsStore } from "@/stores/settings-store";
 import type { RestaurantDetails } from "@/types/settings";
-import type { Staff } from "@/types/staff";
-import { useCurrentStaff } from "@/features/auth/hooks";
-import { StaffFormDialog } from "./staff-form-dialog";
 
 /**
  * SETTINGS (managers only): one card per topic, each saved on its own, so
@@ -37,7 +31,7 @@ export function SettingsScreen() {
     <>
       <PageHeader
         title="Settings"
-        description="Restaurant details, bills, kitchen timers, staff and appearance."
+        description="Restaurant details, bills, kitchen timers and appearance."
       />
       <div className="grid items-start gap-6 lg:grid-cols-2">
         <RestaurantCard />
@@ -45,11 +39,8 @@ export function SettingsScreen() {
           <TaxCard />
           <KitchenCard />
         </div>
-        <StaffCard />
-        <div className="flex flex-col gap-6">
-          <AppearanceCard />
-          <DemoDataCard />
-        </div>
+        <AppearanceCard />
+        <DemoDataCard />
       </div>
     </>
   );
@@ -204,92 +195,6 @@ function KitchenCard() {
   );
 }
 
-function StaffCard() {
-  const staff = useAuthStore((s) => s.staff);
-  const removeStaff = useAuthStore((s) => s.removeStaff);
-  const me = useCurrentStaff();
-  const [form, setForm] = useState<{ open: boolean; member?: Staff; key: number }>({
-    open: false,
-    key: 0,
-  });
-  const [removing, setRemoving] = useState<Staff>();
-
-  const openForm = (member?: Staff) =>
-    setForm((f) => ({ open: true, member, key: f.key + 1 }));
-
-  return (
-    <Card>
-      <CardHeader className="flex-row items-center justify-between">
-        <CardTitle>Staff</CardTitle>
-        <Button size="sm" onClick={() => openForm()}>
-          <Plus aria-hidden="true" /> Add staff
-        </Button>
-      </CardHeader>
-      <CardContent>
-        <ul className="divide-y divide-border">
-          {staff.map((member) => (
-            <li key={member.id} className="flex items-center gap-3 py-2">
-              <span className="flex min-w-0 flex-1 flex-col">
-                <span className="truncate font-semibold">
-                  {member.name}
-                  {member.id === me?.id && (
-                    <span className="font-normal text-muted-foreground"> (you)</span>
-                  )}
-                </span>
-                <span className="text-sm text-muted-foreground">PIN ••••</span>
-              </span>
-              <Badge variant={member.role === "manager" ? "primary" : "neutral"}>
-                {ROLE_LABEL[member.role]}
-              </Badge>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => openForm(member)}
-                aria-label={`Edit ${member.name}`}
-              >
-                <Pencil aria-hidden="true" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-danger"
-                disabled={member.id === me?.id}
-                onClick={() => setRemoving(member)}
-                aria-label={`Remove ${member.name}`}
-              >
-                <Trash2 aria-hidden="true" />
-              </Button>
-            </li>
-          ))}
-        </ul>
-      </CardContent>
-
-      <StaffFormDialog
-        key={form.key}
-        open={form.open}
-        member={form.member}
-        onClose={() => setForm((f) => ({ ...f, open: false }))}
-        onSaved={(saved) =>
-          toast.success(form.member ? `${saved.name} updated` : `${saved.name} added`)
-        }
-      />
-      <ConfirmDialog
-        open={removing !== undefined}
-        onClose={() => setRemoving(undefined)}
-        title={`Remove ${removing?.name ?? "staff member"}?`}
-        description="They won't be able to log in any more. Orders they took keep their name in the history."
-        confirmLabel="Remove"
-        onConfirm={() => {
-          const member = removing;
-          if (member && tryAction(() => removeStaff(member.id))) {
-            toast.success(`${member.name} removed`);
-          }
-        }}
-      />
-    </Card>
-  );
-}
-
 type ThemeChoice = "light" | "dark" | "system";
 
 function AppearanceCard() {
@@ -329,8 +234,8 @@ function DemoDataCard() {
       </CardHeader>
       <CardContent className="flex flex-col items-start gap-3">
         <p className="text-sm text-muted-foreground">
-          Put tables, orders, payments, the menu, settings and staff back to the sample
-          data. Useful before a demo.
+          Put tables, orders, payments, the menu and settings back to the sample data.
+          Useful before a demo.
         </p>
         <Button variant="danger" onClick={() => setConfirming(true)}>
           <RotateCcw aria-hidden="true" /> Reset demo data
