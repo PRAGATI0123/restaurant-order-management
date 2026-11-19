@@ -8,6 +8,8 @@ server when the connection is back.
 
 Built with **Next.js 16 (App Router), TypeScript (strict) and Tailwind CSS 4**.
 
+![Dashboard: today's sales, open orders, the kitchen and tables at a glance](docs/screenshots/dashboard.jpg)
+
 > Frontend project: there is no real backend. A mock API runs inside the browser and
 > behaves like a real server (delay, errors, validation). See
 > [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#offline-first-and-sync).
@@ -63,8 +65,40 @@ npm start
 | **Dashboard**  | Today, live: sales, average bill, open orders, tables in use, sales by hour, kitchen status, top dishes, latest bills.                                                                                                  |
 | **Reports**    | Today / yesterday / 7 / 30 days: totals, discounts, GST (CGST + SGST), sales by hour, payment methods, order types, dish sales, cancellations, **CSV export**.                                                          |
 | **Menu**       | Dishes with photos, categories, sizes, add-ons and option groups; mark sold out.                                                                                                                                        |
-| **Settings**   | Restaurant details (printed on invoices), GST rate, kitchen timers, theme, reset demo data. Managers only.                                                                                                              |
+| **Settings**   | Restaurant details (printed on invoices), GST rate, kitchen timers, theme, load the sample service or start fresh. Managers only.                                                                                       |
 | **Everywhere** | Role-based screens and permissions, light and dark themes, touch-sized controls (44 px+), works offline, sync status in the header.                                                                                     |
+
+---
+
+## Screenshots
+
+Production build with the sample service loaded, on a 1440 × 900 screen.
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/login.jpg" alt="Login: a dining-room photo beside the list of staff"><br><b>Login</b>: tap your name…</td>
+    <td width="50%"><img src="docs/screenshots/pin.jpg" alt="PIN entry with a number pad and the pages this role can open"><br>…then your PIN. The pages your role can open are listed.</td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/tables.jpg" alt="Floor plan with tables coloured by status, bill so far and minutes seated"><br><b>Tables</b>: live status, bill so far, minutes seated.</td>
+    <td><img src="docs/screenshots/new-order.jpg" alt="New order: dish photos, table picker and the current order with GST"><br><b>New order</b>: dishes with sizes and options; the bill adds up live.</td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/kitchen.jpg" alt="Kitchen display with New, Preparing and Ready columns and timers"><br><b>Kitchen</b>: one tap per step, timers turn amber then red.</td>
+    <td><img src="docs/screenshots/checkout.jpg" alt="Checkout: bill lines, discount, GST and the payment panel"><br><b>Checkout</b>: discounts, GST, cash with change, card, UPI, split bills.</td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/reports.jpg" alt="Reports: totals, GST split, sales by hour and payment methods"><br><b>Reports</b>: totals, CGST + SGST, sales by hour, CSV export.</td>
+    <td><img src="docs/screenshots/kitchen-dark.jpg" alt="The kitchen display in dark mode"><br><b>Dark mode</b>: every screen, every text checked for contrast.</td>
+  </tr>
+</table>
+
+<p align="center">
+  <img src="docs/screenshots/phone-login.jpg" alt="Login on a phone" width="260">
+  &nbsp;&nbsp;
+  <img src="docs/screenshots/phone-tables.jpg" alt="Tables on a phone" width="260">
+  <br><b>On a phone</b>: the same app, laid out for one hand.
+</p>
 
 ---
 
