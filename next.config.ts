@@ -7,6 +7,10 @@ const nextConfig: NextConfig = {
   // Hide the round "N" development badge: it sat on top of the sidebar's
   // "Log out" button. Dev-only; Next.js still shows build and runtime errors.
   devIndicators: false,
+  // The login page is the front door: "/" has no page of its own.
+  async redirects() {
+    return [{ source: "/", destination: "/login", permanent: false }];
+  },
   // The service worker must never be cached by the browser, or a new version
   // of the app would take days to reach the tills (Next.js PWA guide).
   async headers() {

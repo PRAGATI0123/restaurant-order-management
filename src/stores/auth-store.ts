@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-import { verifyPin } from "@/domain/auth/login";
+import { NO_ATTEMPTS, verifyPin, type LoginAttempts } from "@/domain/auth/login";
 import { assertCan, type Action } from "@/domain/auth/permissions";
 import { DomainError } from "@/domain/errors";
 import { sampleStaff } from "@/mocks/data/staff";
@@ -17,6 +17,12 @@ type AuthState = {
    * fresh, instead of offering to go back to the page the last person was on.
    */
   loggedOutByUser: boolean;
+  /**
+   * Wrong PINs on this device (not saved). Kept here, not on the PIN screen,
+   * so going back and choosing another user can't dodge the 30 s lockout.
+   */
+  pinAttempts: LoginAttempts;
+  setPinAttempts: (attempts: LoginAttempts) => void;
 
   /** Checks the PIN and logs this user in. Throws DomainError on a wrong PIN. */
   login: (staffId: Id, pin: string) => Staff;
@@ -43,12 +49,18 @@ export const useAuthStore = create<AuthState>()(
       staff: sampleStaff,
       currentStaffId: undefined,
       loggedOutByUser: false,
+      pinAttempts: NO_ATTEMPTS,
+      setPinAttempts: (pinAttempts) => set({ pinAttempts }),
 
       login: (staffId, pin) => {
         const user = get().staff.find((s) => s.id === staffId);
         if (!user) throw new DomainError("Choose who is logging in.");
         const member = verifyPin(user, pin);
-        set({ currentStaffId: member.id, loggedOutByUser: false });
+        set({
+          currentStaffId: member.id,
+          loggedOutByUser: false,
+          pinAttempts: NO_ATTEMPTS,
+        });
         return member;
       },
 
