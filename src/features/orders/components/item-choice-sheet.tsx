@@ -71,6 +71,8 @@ function ChoiceForm({
   const problems = findChoiceProblems(item, choices, catalog);
   const firstProblem = Object.values(problems)[0];
   const unitPrice = unitPriceWithChoices(item, choices, catalog);
+  // A dish with sizes has no price until a size is picked (the card says "from ₹180").
+  const priceKnown = item.variants.length === 0 || choices.variantId !== undefined;
 
   function toggle(list: string[], id: string): string[] {
     return list.includes(id) ? list.filter((x) => x !== id) : [...list, id];
@@ -185,7 +187,8 @@ function ChoiceForm({
             </p>
           )}
           <Button size="lg" disabled={firstProblem !== undefined} onClick={add}>
-            Add to order · {formatRupees(unitPrice * choices.quantity)}
+            Add to order
+            {priceKnown && ` · ${formatRupees(unitPrice * choices.quantity)}`}
           </Button>
         </div>
       </div>

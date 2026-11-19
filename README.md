@@ -73,7 +73,7 @@ npm start
 | `npm start`          | Run the production build (enables the offline service worker)              |
 | `npm test`           | Run all tests once (Vitest)                                                |
 | `npm run test:watch` | Tests in watch mode                                                        |
-| `npm run typecheck`  | TypeScript, no output files                                                |
+| `npm run typecheck`  | Generates Next.js route types (`next typegen`), then runs TypeScript       |
 | `npm run lint`       | ESLint                                                                     |
 | `npm run format`     | Prettier (with Tailwind class sorting)                                     |
 | `npm run check`      | **Everything:** format check, lint, typecheck, tests, build (CI runs this) |

@@ -227,7 +227,7 @@ function Report({ range, preset }: { range: DateRange; preset: RangePreset }) {
               icon={ShoppingBag}
               label="Dishes sold"
               value={String(items.reduce((sum, i) => sum + i.quantity, 0))}
-              detail={`${items.length} different dishes`}
+              detail={`${items.length} different ${items.length === 1 ? "dish" : "dishes"}`}
             />
           </section>
 
@@ -254,7 +254,7 @@ function Report({ range, preset }: { range: DateRange; preset: RangePreset }) {
                   rows={PAYMENT_METHODS.map((m) => ({
                     key: m,
                     label: PAYMENT_METHOD_LABEL[m],
-                    detail: `${methods.byMethod[m].count} payments`,
+                    detail: `${methods.byMethod[m].count} ${methods.byMethod[m].count === 1 ? "payment" : "payments"}`,
                     value: methods.byMethod[m].totalPaise,
                     valueText: formatRupees(methods.byMethod[m].totalPaise),
                   }))}
@@ -266,7 +266,7 @@ function Report({ range, preset }: { range: DateRange; preset: RangePreset }) {
                     rows={types.map((t) => ({
                       key: t.type,
                       label: ORDER_TYPE_LABEL[t.type],
-                      detail: `${t.bills} bills`,
+                      detail: `${t.bills} ${t.bills === 1 ? "bill" : "bills"}`,
                       value: t.totalPaise,
                       valueText: formatRupees(t.totalPaise),
                     }))}

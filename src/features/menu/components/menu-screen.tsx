@@ -94,7 +94,7 @@ export function MenuScreen() {
     <>
       <PageHeader
         title="Menu"
-        description={`${items.length} items · ${soldOutCount} sold out today`}
+        description={`${items.length} ${items.length === 1 ? "dish" : "dishes"} · ${soldOutCount} sold out today`}
         actions={
           can("menu.edit") && (
             <>

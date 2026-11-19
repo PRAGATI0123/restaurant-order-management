@@ -25,7 +25,8 @@ type DialogProps = {
  *
  * React state is the boss. Every way of closing (Escape, X button, backdrop)
  * calls onClose; the parent sets open=false; the effect below then closes the
- * real <dialog>. We never close the <dialog> behind React's back.
+ * real <dialog>. We never close the <dialog> behind React's back (except when
+ * the dialog's page is hidden or removed: see the effect's cleanup).
  *
  * Why not just listen for the browser's "close" event? It arrives later (it is
  * queued), and in testing it sometimes never arrived at all. React then still
@@ -46,11 +47,21 @@ function BaseDialog({
   const descriptionId = useId();
 
   // Keep the real <dialog> in step with the `open` prop.
+  //
+  // The cleanup matters: Next.js keeps the page you just left alive but hidden
+  // (so Back is instant), and hiding runs this cleanup. Without it, a sheet left
+  // open there (e.g. a table's "Start order" sheet) would stay a *modal* dialog
+  // on the hidden page, and a modal dialog blocks clicks on everything else, so
+  // the new page couldn't be used. If the page comes back, the effect runs again
+  // and reopens it (if it's still meant to be open).
   useEffect(() => {
     const dialog = ref.current;
     if (!dialog) return;
     if (open && !dialog.open) dialog.showModal();
     if (!open && dialog.open) dialog.close();
+    return () => {
+      if (dialog.open) dialog.close();
+    };
   }, [open]);
 
   return (
