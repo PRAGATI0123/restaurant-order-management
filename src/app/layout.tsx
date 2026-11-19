@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Fraunces, Plus_Jakarta_Sans } from "next/font/google";
+import { ServiceWorker } from "@/components/service-worker";
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from "@/providers/theme-provider";
 import "./globals.css";
@@ -43,6 +44,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <ThemeProvider>
           {children}
           <Toaster />
+          <ServiceWorker />
         </ThemeProvider>
       </body>
     </html>

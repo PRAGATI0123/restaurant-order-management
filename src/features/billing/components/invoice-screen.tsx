@@ -42,7 +42,7 @@ export function InvoiceScreen({ invoiceId }: { invoiceId: Id }) {
         <EmptyState
           icon={FileText}
           title="This invoice doesn't exist"
-          description="It may have been created before the page was refreshed."
+          description="It may have been removed when the demo data was reset."
           className="bg-surface"
           action={
             <ButtonLink href="/billing/transactions">See all transactions</ButtonLink>

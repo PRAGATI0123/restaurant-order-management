@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ROLE_LABEL } from "@/domain/auth/permissions";
 import { canOpen, homeFor } from "@/domain/auth/routes";
+import { useDataReady } from "@/lib/persistence/load-saved-data";
 import { useAuthStore } from "@/stores/auth-store";
 import { useAuthReady, useCurrentStaff } from "../hooks";
 
@@ -17,28 +18,40 @@ import { useAuthReady, useCurrentStaff } from "../hooks";
  *    tapped "Log out" themselves).
  *  - Logged in, but this page isn't for your role → a friendly "not for your
  *    role" message with a button to your own start page.
- *  - Otherwise → the page.
+ *  - Otherwise → the page, once the data saved on this device has loaded
+ *    (IndexedDB). Until then: a loading screen, so nobody ever sees or edits
+ *    the sample data for a moment before their own appears.
  *
  * This is about showing the right screens. The real protection is in the
  * stores: every action checks the role again (requirePermission).
  */
 export function AuthGate({ children }: { children: React.ReactNode }) {
-  const ready = useAuthReady();
+  const authReady = useAuthReady();
+  const dataReady = useDataReady();
   const me = useCurrentStaff();
   const loggedOutByUser = useAuthStore((s) => s.loggedOutByUser);
   const pathname = usePathname();
   const router = useRouter();
 
   useEffect(() => {
-    if (!ready || me) return;
+    if (!authReady || me) return;
     // Sent here by a link or an old tab: come back to this page after logging in.
     // Logged out on purpose (end of shift): the next person starts fresh.
     router.replace(
       loggedOutByUser ? "/login" : `/login?next=${encodeURIComponent(pathname)}`,
     );
-  }, [ready, me, loggedOutByUser, pathname, router]);
+  }, [authReady, me, loggedOutByUser, pathname, router]);
 
-  if (!ready || !me) return <Skeleton className="h-[60vh] w-full" />;
+  if (!authReady || !me || !dataReady) {
+    return (
+      <div className="flex flex-col gap-3" role="status" aria-live="polite">
+        <span className="text-sm text-muted-foreground">
+          Loading your restaurant data…
+        </span>
+        <Skeleton className="h-[60vh] w-full" />
+      </div>
+    );
+  }
 
   if (!canOpen(me.role, pathname)) {
     return (

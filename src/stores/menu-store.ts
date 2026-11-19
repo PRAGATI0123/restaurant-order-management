@@ -23,6 +23,8 @@ import type {
   ModifierGroup,
 } from "@/types/menu";
 import { requirePermission } from "./auth-store";
+import { persist } from "zustand/middleware";
+import { persistOptions } from "@/lib/persistence/idb-storage";
 
 /** What the add/edit dish form provides. Sizes, add-ons and options are kept as they are. */
 export type MenuItemDetails = Pick<
@@ -80,9 +82,8 @@ function withIds(rows: PricedInput[], prefix: string): MenuItemVariant[] {
 /**
  * THE MENU STORE: one shared place for menu data, used by every page.
  *
- * For now it keeps the data in memory, starting from the sample menu, so a
- * page refresh resets it. Step 19 saves it in IndexedDB instead. Pages only
- * call these actions, so they won't need to change when that happens.
+ * It starts from the sample menu and is saved on this device (IndexedDB), so
+ * changes survive refreshes and restarts. Pages only call these actions.
  *
  * Every action REPLACES arrays and objects instead of editing them in place.
  * That's how React notices something changed and re-draws the screen.
@@ -92,138 +93,148 @@ function withIds(rows: PricedInput[], prefix: string): MenuItemVariant[] {
  * Every action checks the logged-in role first (see guardActions below):
  * kitchen staff may mark dishes sold out; only managers edit the menu.
  */
-export const useMenuStore = create<MenuState>()((set, get) => ({
-  categories: sampleCategories,
-  items: sampleMenuItems,
-  addOns: sampleAddOns,
-  modifierGroups: sampleModifierGroups,
-  ...guardActions<MenuActions>({
-    // ─── Dishes ────────────────────────────────────────────────────────────────
+export const useMenuStore = create<MenuState>()(
+  persist(
+    (set, get) => ({
+      categories: sampleCategories,
+      items: sampleMenuItems,
+      addOns: sampleAddOns,
+      modifierGroups: sampleModifierGroups,
+      ...guardActions<MenuActions>({
+        // ─── Dishes ────────────────────────────────────────────────────────────────
 
-    setAvailability: (itemId, isAvailable) =>
-      set((state) => ({
-        items: state.items.map((item) =>
-          item.id === itemId ? { ...item, isAvailable } : item,
-        ),
-      })),
+        setAvailability: (itemId, isAvailable) =>
+          set((state) => ({
+            items: state.items.map((item) =>
+              item.id === itemId ? { ...item, isAvailable } : item,
+            ),
+          })),
 
-    addItem: (details) => {
-      const item: MenuItem = {
-        id: newId("item"),
-        variants: [],
-        addOnIds: [],
-        modifierGroupIds: [],
-        ...details,
-      };
-      set((state) => ({ items: [...state.items, item] }));
-      return item;
-    },
+        addItem: (details) => {
+          const item: MenuItem = {
+            id: newId("item"),
+            variants: [],
+            addOnIds: [],
+            modifierGroupIds: [],
+            ...details,
+          };
+          set((state) => ({ items: [...state.items, item] }));
+          return item;
+        },
 
-    updateItem: (itemId, details) =>
-      set((state) => ({
-        items: state.items.map((item) =>
-          item.id === itemId ? { ...item, ...details } : item,
-        ),
-      })),
+        updateItem: (itemId, details) =>
+          set((state) => ({
+            items: state.items.map((item) =>
+              item.id === itemId ? { ...item, ...details } : item,
+            ),
+          })),
 
-    setSizes: (itemId, sizes) =>
-      set((state) => ({
-        items: state.items.map((item) => {
-          if (item.id !== itemId) return item;
-          const variants = withIds(sizes, "size");
-          // The dish's own price follows its biggest size, so it never looks
-          // cheaper than it is anywhere sizes aren't shown.
-          const pricePaise =
-            variants.length > 0
-              ? Math.max(...variants.map((v) => v.pricePaise))
-              : item.pricePaise;
-          return { ...item, variants, pricePaise };
-        }),
-      })),
+        setSizes: (itemId, sizes) =>
+          set((state) => ({
+            items: state.items.map((item) => {
+              if (item.id !== itemId) return item;
+              const variants = withIds(sizes, "size");
+              // The dish's own price follows its biggest size, so it never looks
+              // cheaper than it is anywhere sizes aren't shown.
+              const pricePaise =
+                variants.length > 0
+                  ? Math.max(...variants.map((v) => v.pricePaise))
+                  : item.pricePaise;
+              return { ...item, variants, pricePaise };
+            }),
+          })),
 
-    // ─── Categories ────────────────────────────────────────────────────────────
+        // ─── Categories ────────────────────────────────────────────────────────────
 
-    addCategory: (name) => {
-      const category: MenuCategory = {
-        id: newId("cat"),
-        name,
-        sortOrder: get().categories.length, // goes to the end
-      };
-      set((state) => ({ categories: [...state.categories, category] }));
-      return category;
-    },
+        addCategory: (name) => {
+          const category: MenuCategory = {
+            id: newId("cat"),
+            name,
+            sortOrder: get().categories.length, // goes to the end
+          };
+          set((state) => ({ categories: [...state.categories, category] }));
+          return category;
+        },
 
-    renameCategory: (categoryId, name) =>
-      set((state) => ({
-        categories: state.categories.map((c) =>
-          c.id === categoryId ? { ...c, name } : c,
-        ),
-      })),
+        renameCategory: (categoryId, name) =>
+          set((state) => ({
+            categories: state.categories.map((c) =>
+              c.id === categoryId ? { ...c, name } : c,
+            ),
+          })),
 
-    moveCategory: (categoryId, direction) =>
-      set((state) => ({
-        categories: moveCategory(state.categories, categoryId, direction),
-      })),
+        moveCategory: (categoryId, direction) =>
+          set((state) => ({
+            categories: moveCategory(state.categories, categoryId, direction),
+          })),
 
-    deleteCategory: (categoryId) => {
-      const { categories, items } = get();
-      const category = categories.find((c) => c.id === categoryId);
-      if (!category) throw new DomainError("That category doesn't exist.");
-      assertCanDeleteCategory(category, items); // throws a readable error if not empty
-      set({
-        // Renumber the rest so the order stays 0, 1, 2…
-        categories: categories
-          .filter((c) => c.id !== categoryId)
-          .sort((a, b) => a.sortOrder - b.sortOrder)
-          .map((c, index) => ({ ...c, sortOrder: index })),
-      });
-    },
+        deleteCategory: (categoryId) => {
+          const { categories, items } = get();
+          const category = categories.find((c) => c.id === categoryId);
+          if (!category) throw new DomainError("That category doesn't exist.");
+          assertCanDeleteCategory(category, items); // throws a readable error if not empty
+          set({
+            // Renumber the rest so the order stays 0, 1, 2…
+            categories: categories
+              .filter((c) => c.id !== categoryId)
+              .sort((a, b) => a.sortOrder - b.sortOrder)
+              .map((c, index) => ({ ...c, sortOrder: index })),
+          });
+        },
 
-    // ─── Shared add-ons ────────────────────────────────────────────────────────
+        // ─── Shared add-ons ────────────────────────────────────────────────────────
 
-    saveAddOn: ({ name, pricePaise, dishIds }, editingId) => {
-      const addOn: AddOn = { id: editingId ?? newId("add"), name, pricePaise };
-      set((state) => ({
-        addOns: editingId
-          ? state.addOns.map((a) => (a.id === editingId ? addOn : a))
-          : [...state.addOns, addOn],
-        items: setDishLinks(state.items, "addOnIds", addOn.id, dishIds),
-      }));
-      return addOn;
-    },
+        saveAddOn: ({ name, pricePaise, dishIds }, editingId) => {
+          const addOn: AddOn = { id: editingId ?? newId("add"), name, pricePaise };
+          set((state) => ({
+            addOns: editingId
+              ? state.addOns.map((a) => (a.id === editingId ? addOn : a))
+              : [...state.addOns, addOn],
+            items: setDishLinks(state.items, "addOnIds", addOn.id, dishIds),
+          }));
+          return addOn;
+        },
 
-    deleteAddOn: (addOnId) =>
-      set((state) => ({
-        addOns: state.addOns.filter((a) => a.id !== addOnId),
-        items: unlinkEverywhere(state.items, "addOnIds", addOnId),
-      })),
+        deleteAddOn: (addOnId) =>
+          set((state) => ({
+            addOns: state.addOns.filter((a) => a.id !== addOnId),
+            items: unlinkEverywhere(state.items, "addOnIds", addOnId),
+          })),
 
-    // ─── Shared option groups ──────────────────────────────────────────────────
+        // ─── Shared option groups ──────────────────────────────────────────────────
 
-    saveOptionGroup: ({ name, required, maxSelect, options, dishIds }, editingId) => {
-      const group: ModifierGroup = {
-        id: editingId ?? newId("mod"),
-        name,
-        minSelect: required ? 1 : 0,
-        maxSelect,
-        options: withIds(options, "opt"),
-      };
-      set((state) => ({
-        modifierGroups: editingId
-          ? state.modifierGroups.map((g) => (g.id === editingId ? group : g))
-          : [...state.modifierGroups, group],
-        items: setDishLinks(state.items, "modifierGroupIds", group.id, dishIds),
-      }));
-      return group;
-    },
+        saveOptionGroup: ({ name, required, maxSelect, options, dishIds }, editingId) => {
+          const group: ModifierGroup = {
+            id: editingId ?? newId("mod"),
+            name,
+            minSelect: required ? 1 : 0,
+            maxSelect,
+            options: withIds(options, "opt"),
+          };
+          set((state) => ({
+            modifierGroups: editingId
+              ? state.modifierGroups.map((g) => (g.id === editingId ? group : g))
+              : [...state.modifierGroups, group],
+            items: setDishLinks(state.items, "modifierGroupIds", group.id, dishIds),
+          }));
+          return group;
+        },
 
-    deleteOptionGroup: (groupId) =>
-      set((state) => ({
-        modifierGroups: state.modifierGroups.filter((g) => g.id !== groupId),
-        items: unlinkEverywhere(state.items, "modifierGroupIds", groupId),
-      })),
-  }),
-}));
+        deleteOptionGroup: (groupId) =>
+          set((state) => ({
+            modifierGroups: state.modifierGroups.filter((g) => g.id !== groupId),
+            items: unlinkEverywhere(state.items, "modifierGroupIds", groupId),
+          })),
+      }),
+    }),
+    persistOptions("pos-menu", (s: MenuState) => ({
+      categories: s.categories,
+      items: s.items,
+      addOns: s.addOns,
+      modifierGroups: s.modifierGroups,
+    })),
+  ),
+);
 
 /** The store's actions (everything except the data). */
 type MenuActions = Omit<MenuState, "categories" | "items" | "addOns" | "modifierGroups">;

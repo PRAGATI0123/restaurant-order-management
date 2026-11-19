@@ -187,7 +187,7 @@ function Report({ range, preset }: { range: DateRange; preset: RangePreset }) {
         <EmptyState
           icon={ChartColumn}
           title="No sales in this period"
-          description="Bills appear here once they're paid. Sales are kept on this device (from Step 19 they survive a refresh)."
+          description="Bills appear here once they're paid. Sales are kept on this device, so past days stay available."
           className="bg-surface"
         />
       ) : (

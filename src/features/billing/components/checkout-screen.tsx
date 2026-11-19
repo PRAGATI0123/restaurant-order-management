@@ -61,7 +61,7 @@ export function CheckoutScreen({ orderId }: { orderId: Id }) {
         <EmptyState
           icon={Receipt}
           title="This order doesn't exist"
-          description="It may have been created before the page was refreshed."
+          description="It may have been removed when the demo data was reset."
           className="bg-surface"
           action={<ButtonLink href="/billing">See open bills</ButtonLink>}
         />

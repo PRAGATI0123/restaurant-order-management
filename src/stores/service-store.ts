@@ -35,6 +35,8 @@ import type { Invoice, Payment } from "@/types/payment";
 import type { RestaurantTable, TableStatus } from "@/types/table";
 import { requirePermission } from "./auth-store";
 import { useSettingsStore } from "./settings-store";
+import { persist } from "zustand/middleware";
+import { persistOptions } from "@/lib/persistence/idb-storage";
 
 /** Everything the New order screen sends when "Send to kitchen" is tapped. */
 export type PlaceOrderInput = {
@@ -107,213 +109,223 @@ function replaceAll<T extends { id: Id }>(list: T[], updated: T[]): T[] {
  * Every action first checks the logged-in staff member may do it
  * (requirePermission). That also tells us WHO did it, for the order timeline.
  *
- * In memory for now (sample data, reset on refresh). Step 19: IndexedDB.
+ * Saved on this device (IndexedDB); the first visit starts from the sample data.
  */
-export const useServiceStore = create<ServiceState>()((set, get) => {
-  /** Applies a change to one order and saves it. */
-  const updateOrder = (orderId: Id, change: (order: Order) => Order) => {
-    const { orders } = get();
-    const updated = change(mustFind(orders, orderId, "order"));
-    set({ orders: replaceAll(orders, [updated]) });
-  };
-  /** Checks the permission, then returns who is doing it, and when. */
-  const by = (action: Action) => ({ at: now(), by: requirePermission(action).id });
+export const useServiceStore = create<ServiceState>()(
+  persist(
+    (set, get) => {
+      /** Applies a change to one order and saves it. */
+      const updateOrder = (orderId: Id, change: (order: Order) => Order) => {
+        const { orders } = get();
+        const updated = change(mustFind(orders, orderId, "order"));
+        set({ orders: replaceAll(orders, [updated]) });
+      };
+      /** Checks the permission, then returns who is doing it, and when. */
+      const by = (action: Action) => ({ at: now(), by: requirePermission(action).id });
 
-  return {
-    tables: sampleTables,
-    // Paid earlier today first, then the orders still in progress.
-    orders: [...sampleHistory.orders, ...sampleOrders],
-    payments: sampleHistory.payments,
-    invoices: sampleHistory.invoices,
+      return {
+        tables: sampleTables,
+        // Paid earlier today first, then the orders still in progress.
+        orders: [...sampleHistory.orders, ...sampleOrders],
+        payments: sampleHistory.payments,
+        invoices: sampleHistory.invoices,
 
-    // ─── Orders ──────────────────────────────────────────────────────────────
+        // ─── Orders ──────────────────────────────────────────────────────────────
 
-    placeOrder: ({ tableId, ...input }) => {
-      const { at, by: createdBy } = by("order.create");
-      const { tables, orders } = get();
-      const order = createOrder({
-        ...input,
-        createdBy,
-        id: newId("order"),
-        number: nextOrderNumber(orders),
-        at,
-      });
+        placeOrder: ({ tableId, ...input }) => {
+          const { at, by: createdBy } = by("order.create");
+          const { tables, orders } = get();
+          const order = createOrder({
+            ...input,
+            createdBy,
+            id: newId("order"),
+            number: nextOrderNumber(orders),
+            at,
+          });
 
-      if (order.type !== "dine-in") {
-        set({ orders: [...orders, order] });
-        return order;
-      }
-      if (!tableId) throw new DomainError("Choose a table for this dine-in order.");
-      // New order + its table, saved together (or neither, if a rule says no).
-      const seated = startOrderAtTable(
-        order,
-        mustFind(tables, tableId, "table"),
-        tables,
-        orders,
-        at,
-      );
-      set({
-        orders: [...orders, seated.order],
-        tables: replaceAll(tables, [seated.table]),
-      });
-      return seated.order;
-    },
-
-    // "paid" only happens at checkout (with a payment), "cancelled" needs a reason.
-    // The kitchen starts and finishes cooking; front of house serves.
-    setOrderStatus: (orderId, to) => {
-      const who = by(to === "served" ? "order.serve" : "kitchen.updateStatus");
-      updateOrder(orderId, (order) => moveOrder(order, to, who));
-    },
-
-    cancelOrder: (orderId, reason) => {
-      const who = by("order.cancel");
-      updateOrder(orderId, (order) => moveOrder(order, "cancelled", who, reason));
-    },
-
-    cancelOrderItem: (orderId, lineId, reason) => {
-      const who = by("order.cancel");
-      updateOrder(orderId, (order) => cancelItem(order, lineId, reason, who));
-    },
-
-    addItemsToOrder: (orderId, lines) => {
-      const { at } = by("order.create");
-      updateOrder(orderId, (order) => addItemsToOrder(order, lines, at));
-    },
-
-    splitOrder: (orderId, moves) => {
-      by("order.split");
-      const { orders } = get();
-      const { original, created } = splitOrder(
-        mustFind(orders, orderId, "order"),
-        moves,
-        {
-          id: newId("order"),
-          number: nextOrderNumber(orders),
-          at: now(),
+          if (order.type !== "dine-in") {
+            set({ orders: [...orders, order] });
+            return order;
+          }
+          if (!tableId) throw new DomainError("Choose a table for this dine-in order.");
+          // New order + its table, saved together (or neither, if a rule says no).
+          const seated = startOrderAtTable(
+            order,
+            mustFind(tables, tableId, "table"),
+            tables,
+            orders,
+            at,
+          );
+          set({
+            orders: [...orders, seated.order],
+            tables: replaceAll(tables, [seated.table]),
+          });
+          return seated.order;
         },
-      );
-      set({ orders: [...replaceAll(orders, [original]), created] });
-      return created;
+
+        // "paid" only happens at checkout (with a payment), "cancelled" needs a reason.
+        // The kitchen starts and finishes cooking; front of house serves.
+        setOrderStatus: (orderId, to) => {
+          const who = by(to === "served" ? "order.serve" : "kitchen.updateStatus");
+          updateOrder(orderId, (order) => moveOrder(order, to, who));
+        },
+
+        cancelOrder: (orderId, reason) => {
+          const who = by("order.cancel");
+          updateOrder(orderId, (order) => moveOrder(order, "cancelled", who, reason));
+        },
+
+        cancelOrderItem: (orderId, lineId, reason) => {
+          const who = by("order.cancel");
+          updateOrder(orderId, (order) => cancelItem(order, lineId, reason, who));
+        },
+
+        addItemsToOrder: (orderId, lines) => {
+          const { at } = by("order.create");
+          updateOrder(orderId, (order) => addItemsToOrder(order, lines, at));
+        },
+
+        splitOrder: (orderId, moves) => {
+          by("order.split");
+          const { orders } = get();
+          const { original, created } = splitOrder(
+            mustFind(orders, orderId, "order"),
+            moves,
+            {
+              id: newId("order"),
+              number: nextOrderNumber(orders),
+              at: now(),
+            },
+          );
+          set({ orders: [...replaceAll(orders, [original]), created] });
+          return created;
+        },
+
+        // ─── Billing ─────────────────────────────────────────────────────────────
+
+        setDiscount: (orderId, discount) => {
+          const { at } = by("bill.discount");
+          updateOrder(orderId, (order) => setOrderDiscount(order, discount, at));
+        },
+
+        settleOrder: (orderId, parts) => {
+          const who = by("payment.take");
+          const { tables, orders, payments, invoices } = get();
+          const order = mustFind(orders, orderId, "order");
+          const tableName = (id: Id) => tables.find((t) => t.id === id)?.name;
+          // Order paid + payments + invoice + freed tables: ONE set(), all or nothing.
+          const result = settleOrder({
+            order,
+            tables,
+            orders,
+            parts,
+            // From Settings, and frozen on the invoice:
+            taxRateBasisPoints: useSettingsStore.getState().taxRateBasisPoints,
+            restaurant: useSettingsStore.getState().restaurant,
+            where: orderWhere(order, tableName),
+            invoiceNumber: nextInvoiceNumber(invoices),
+            ...who,
+            newId,
+          });
+          set({
+            orders: replaceAll(orders, [result.order]),
+            tables: replaceAll(tables, result.tables),
+            payments: [...payments, ...result.payments],
+            invoices: [...invoices, result.invoice],
+          });
+          return result.invoice;
+        },
+
+        // ─── Tables ──────────────────────────────────────────────────────────────
+
+        setTableStatus: (tableId, to) => {
+          by("table.changeStatus");
+          const { tables, orders } = get();
+          const updated = changeStatusSafely(
+            mustFind(tables, tableId, "table"),
+            to,
+            tables,
+            orders,
+          );
+          set({ tables: replaceAll(tables, [updated]) });
+        },
+
+        moveOrderToTable: (orderId, toTableId) => {
+          by("table.transfer");
+          const { tables, orders } = get();
+          const order = mustFind(orders, orderId, "order");
+          const from = mustFind(tables, order.tableIds[0] ?? "", "table");
+          const to = mustFind(tables, toTableId, "table");
+          const result = transferOrder(order, from, to, now());
+          // If other orders are still open at the old table, its guests are still
+          // there: it stays Occupied instead of going to Cleaning.
+          const othersRemain = openOrdersAt(from, orders).some((o) => o.id !== orderId);
+          set({
+            orders: replaceAll(orders, [result.order]),
+            tables: replaceAll(tables, [othersRemain ? from : result.from, result.to]),
+          });
+        },
+
+        joinTables: (mainTableId, joiningIds) => {
+          by("table.merge");
+          const { tables, orders } = get();
+          const main = mustFind(tables, mainTableId, "table");
+          const joining = joiningIds.map((id) => mustFind(tables, id, "table"));
+          const result = mergeTables(main, joining, undefined, now());
+          // Every open order at the main table now covers the joined tables too.
+          const linked = openOrdersAt(main, orders).map((order) => ({
+            ...order,
+            tableIds: [...new Set([...order.tableIds, ...joiningIds])],
+          }));
+          set({
+            tables: replaceAll(tables, [result.main, ...result.joined]),
+            orders: replaceAll(orders, linked),
+          });
+        },
+
+        separateTables: (mainTableId) => {
+          by("table.merge");
+          const { tables, orders } = get();
+          const main = mustFind(tables, mainTableId, "table");
+          const joined = tablesJoinedTo(main, tables);
+          const result = unmergeTables(main, joined, undefined, now());
+          const leaving = new Set(joined.map((t) => t.id));
+          const unlinked = openOrdersAt(main, orders).map((order) => ({
+            ...order,
+            tableIds: order.tableIds.filter((id) => !leaving.has(id)),
+          }));
+          set({
+            tables: replaceAll(tables, result.separated),
+            orders: replaceAll(orders, unlinked),
+          });
+        },
+
+        saveLayout: (layout) => {
+          by("floorPlan.edit");
+          set((state) => {
+            const current = new Map(state.tables.map((t) => [t.id, t]));
+            return {
+              // Keep each table's live status; take position and looks from the editor.
+              // New tables start Available. Tables left out of the layout were removed.
+              // Copy ONLY the layout fields, by name. Even if a caller passes objects
+              // with extra fields (like a status), they can't change live data.
+              tables: layout.map(({ id, name, seats, x, y }) => {
+                const existing = current.get(id);
+                const placed = { name, seats, x, y };
+                return existing
+                  ? { ...existing, ...placed }
+                  : { id, ...placed, status: "available" as const };
+              }),
+            };
+          });
+        },
+      };
     },
-
-    // ─── Billing ─────────────────────────────────────────────────────────────
-
-    setDiscount: (orderId, discount) => {
-      const { at } = by("bill.discount");
-      updateOrder(orderId, (order) => setOrderDiscount(order, discount, at));
-    },
-
-    settleOrder: (orderId, parts) => {
-      const who = by("payment.take");
-      const { tables, orders, payments, invoices } = get();
-      const order = mustFind(orders, orderId, "order");
-      const tableName = (id: Id) => tables.find((t) => t.id === id)?.name;
-      // Order paid + payments + invoice + freed tables: ONE set(), all or nothing.
-      const result = settleOrder({
-        order,
-        tables,
-        orders,
-        parts,
-        // From Settings, and frozen on the invoice:
-        taxRateBasisPoints: useSettingsStore.getState().taxRateBasisPoints,
-        restaurant: useSettingsStore.getState().restaurant,
-        where: orderWhere(order, tableName),
-        invoiceNumber: nextInvoiceNumber(invoices),
-        ...who,
-        newId,
-      });
-      set({
-        orders: replaceAll(orders, [result.order]),
-        tables: replaceAll(tables, result.tables),
-        payments: [...payments, ...result.payments],
-        invoices: [...invoices, result.invoice],
-      });
-      return result.invoice;
-    },
-
-    // ─── Tables ──────────────────────────────────────────────────────────────
-
-    setTableStatus: (tableId, to) => {
-      by("table.changeStatus");
-      const { tables, orders } = get();
-      const updated = changeStatusSafely(
-        mustFind(tables, tableId, "table"),
-        to,
-        tables,
-        orders,
-      );
-      set({ tables: replaceAll(tables, [updated]) });
-    },
-
-    moveOrderToTable: (orderId, toTableId) => {
-      by("table.transfer");
-      const { tables, orders } = get();
-      const order = mustFind(orders, orderId, "order");
-      const from = mustFind(tables, order.tableIds[0] ?? "", "table");
-      const to = mustFind(tables, toTableId, "table");
-      const result = transferOrder(order, from, to, now());
-      // If other orders are still open at the old table, its guests are still
-      // there: it stays Occupied instead of going to Cleaning.
-      const othersRemain = openOrdersAt(from, orders).some((o) => o.id !== orderId);
-      set({
-        orders: replaceAll(orders, [result.order]),
-        tables: replaceAll(tables, [othersRemain ? from : result.from, result.to]),
-      });
-    },
-
-    joinTables: (mainTableId, joiningIds) => {
-      by("table.merge");
-      const { tables, orders } = get();
-      const main = mustFind(tables, mainTableId, "table");
-      const joining = joiningIds.map((id) => mustFind(tables, id, "table"));
-      const result = mergeTables(main, joining, undefined, now());
-      // Every open order at the main table now covers the joined tables too.
-      const linked = openOrdersAt(main, orders).map((order) => ({
-        ...order,
-        tableIds: [...new Set([...order.tableIds, ...joiningIds])],
-      }));
-      set({
-        tables: replaceAll(tables, [result.main, ...result.joined]),
-        orders: replaceAll(orders, linked),
-      });
-    },
-
-    separateTables: (mainTableId) => {
-      by("table.merge");
-      const { tables, orders } = get();
-      const main = mustFind(tables, mainTableId, "table");
-      const joined = tablesJoinedTo(main, tables);
-      const result = unmergeTables(main, joined, undefined, now());
-      const leaving = new Set(joined.map((t) => t.id));
-      const unlinked = openOrdersAt(main, orders).map((order) => ({
-        ...order,
-        tableIds: order.tableIds.filter((id) => !leaving.has(id)),
-      }));
-      set({
-        tables: replaceAll(tables, result.separated),
-        orders: replaceAll(orders, unlinked),
-      });
-    },
-
-    saveLayout: (layout) => {
-      by("floorPlan.edit");
-      set((state) => {
-        const current = new Map(state.tables.map((t) => [t.id, t]));
-        return {
-          // Keep each table's live status; take position and looks from the editor.
-          // New tables start Available. Tables left out of the layout were removed.
-          // Copy ONLY the layout fields, by name. Even if a caller passes objects
-          // with extra fields (like a status), they can't change live data.
-          tables: layout.map(({ id, name, seats, x, y }) => {
-            const existing = current.get(id);
-            const placed = { name, seats, x, y };
-            return existing
-              ? { ...existing, ...placed }
-              : { id, ...placed, status: "available" as const };
-          }),
-        };
-      });
-    },
-  };
-});
+    persistOptions("pos-service", (s: ServiceState) => ({
+      tables: s.tables,
+      orders: s.orders,
+      payments: s.payments,
+      invoices: s.invoices,
+    })),
+  ),
+);

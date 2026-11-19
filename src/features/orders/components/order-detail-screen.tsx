@@ -75,7 +75,7 @@ export function OrderDetailScreen({ orderId }: { orderId: Id }) {
   const order = orders.find((o) => o.id === orderId);
 
   if (!order) {
-    // e.g. the page was refreshed: new orders live in memory until Step 19
+    // e.g. an old link, or data reset in Settings
     return (
       <>
         <PageHeader
@@ -85,7 +85,7 @@ export function OrderDetailScreen({ orderId }: { orderId: Id }) {
         <EmptyState
           icon={ClipboardList}
           title="This order doesn't exist"
-          description="It may have been created before the page was refreshed."
+          description="It may have been removed when the demo data was reset."
           className="bg-surface"
           action={<ButtonLink href="/orders">See all orders</ButtonLink>}
         />

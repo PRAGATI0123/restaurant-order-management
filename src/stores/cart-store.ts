@@ -3,6 +3,8 @@ import { addToCart, setLineNote, setLineQuantity } from "@/domain/orders/cart";
 import type { DeliveryFormValues } from "@/lib/validation/order";
 import type { Id } from "@/types/common";
 import type { OrderItem, OrderType } from "@/types/order";
+import { persist } from "zustand/middleware";
+import { persistOptions } from "@/lib/persistence/idb-storage";
 
 const EMPTY_DELIVERY: DeliveryFormValues = { customerName: "", phone: "", address: "" };
 
@@ -33,29 +35,40 @@ type CartState = {
  *
  * The rules (combine same dishes, 1–99, notes) are in domain/orders/cart.ts.
  */
-export const useCartStore = create<CartState>()((set) => ({
-  type: "dine-in",
-  tableId: undefined,
-  customerName: "",
-  delivery: EMPTY_DELIVERY,
-  lines: [],
-
-  setType: (type) => set({ type }),
-  setTableId: (tableId) => set({ tableId }),
-  setCustomerName: (customerName) => set({ customerName }),
-  setDeliveryField: (field, value) =>
-    set((state) => ({ delivery: { ...state.delivery, [field]: value } })),
-  addLine: (line) => set((state) => ({ lines: addToCart(state.lines, line) })),
-  setQuantity: (lineId, quantity) =>
-    set((state) => ({ lines: setLineQuantity(state.lines, lineId, quantity) })),
-  setNote: (lineId, note) =>
-    set((state) => ({ lines: setLineNote(state.lines, lineId, note) })),
-  reset: () =>
-    set({
+export const useCartStore = create<CartState>()(
+  persist(
+    (set) => ({
       type: "dine-in",
       tableId: undefined,
       customerName: "",
       delivery: EMPTY_DELIVERY,
       lines: [],
+
+      setType: (type) => set({ type }),
+      setTableId: (tableId) => set({ tableId }),
+      setCustomerName: (customerName) => set({ customerName }),
+      setDeliveryField: (field, value) =>
+        set((state) => ({ delivery: { ...state.delivery, [field]: value } })),
+      addLine: (line) => set((state) => ({ lines: addToCart(state.lines, line) })),
+      setQuantity: (lineId, quantity) =>
+        set((state) => ({ lines: setLineQuantity(state.lines, lineId, quantity) })),
+      setNote: (lineId, note) =>
+        set((state) => ({ lines: setLineNote(state.lines, lineId, note) })),
+      reset: () =>
+        set({
+          type: "dine-in",
+          tableId: undefined,
+          customerName: "",
+          delivery: EMPTY_DELIVERY,
+          lines: [],
+        }),
     }),
-}));
+    persistOptions("pos-cart", (s: CartState) => ({
+      type: s.type,
+      tableId: s.tableId,
+      customerName: s.customerName,
+      delivery: s.delivery,
+      lines: s.lines,
+    })),
+  ),
+);

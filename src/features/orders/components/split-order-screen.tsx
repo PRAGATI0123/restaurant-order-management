@@ -44,7 +44,7 @@ export function SplitOrderScreen({ orderId }: { orderId: Id }) {
         <EmptyState
           icon={ClipboardList}
           title="This order doesn't exist"
-          description="It may have been created before the page was refreshed."
+          description="It may have been removed when the demo data was reset."
           className="bg-surface"
           action={<ButtonLink href="/orders">See all orders</ButtonLink>}
         />

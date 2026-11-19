@@ -2,18 +2,28 @@
 
 Zustand stores: shared data that every page can read and change.
 
-| Store           | Holds                                     | Saved where (now → Step 19) |
-| --------------- | ----------------------------------------- | --------------------------- |
-| `menu-store.ts` | Categories and menu items                 | memory → IndexedDB          |
-| (next steps)    | Tables, orders, payments, logged-in staff | memory → IndexedDB          |
+| Store               | Holds                                         | Saved where                 |
+| ------------------- | --------------------------------------------- | --------------------------- |
+| `service-store.ts`  | Tables, orders, payments, invoices            | IndexedDB (`pos-service`)   |
+| `menu-store.ts`     | Categories, dishes, add-ons, option groups    | IndexedDB (`pos-menu`)      |
+| `settings-store.ts` | Restaurant details, GST rate, kitchen timers  | IndexedDB (`pos-settings`)  |
+| `cart-store.ts`     | The order being built on the New order screen | IndexedDB (`pos-cart`)      |
+| `sync-store.ts`     | The outbox (changes waiting for the server)   | IndexedDB (`pos-sync`)      |
+| `auth-store.ts`     | The users and who is logged in                | sessionStorage (login only) |
 
-**For now** the data lives in memory and starts from the sample data in `mocks/data/`,
-so a page refresh resets it. **Step 19** saves it in IndexedDB so it survives refreshes
-and browser restarts. Pages only use the store's actions (`addItem`, `setAvailability`…),
-so they won't change when that happens.
+**Offline-first:** every store saves itself on the device (IndexedDB, via
+`lib/persistence`), so data survives refreshes and browser restarts and the till
+works without internet. `AuthGate` waits until the saved data is loaded before
+showing a page. The sync engine (`lib/sync`) watches the stores and sends every
+change to the (mock) server through the outbox, retrying when the network is bad.
+
+The first visit starts from the sample data in `mocks/data/`. Settings → "Reset demo
+data" puts it back.
 
 **Rules:**
 
 - Business rules stay in `domain/`. A store action calls them; it doesn't re-invent them.
-- Never edit state in place. Always return new arrays and objects, so React notices.
+- Every action checks the logged-in role first (`requirePermission`).
+- Never edit state in place. Always return new arrays and objects, so React notices
+  (and so the sync engine can tell which records changed).
 - In a component, select only what you need: `useMenuStore((s) => s.items)`.

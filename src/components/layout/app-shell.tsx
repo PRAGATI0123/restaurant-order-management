@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { ActiveNavLinks, NavLinks } from "@/components/layout/nav-links";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
+import { SyncStatus } from "@/features/sync/components/sync-status";
 import {
   CurrentUser,
   LogoutButton,
@@ -44,6 +45,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </Suspense>
         </nav>
         <div className="flex flex-col gap-3 border-t border-border p-4">
+          <SyncStatus />
           <div className="flex items-center justify-between gap-2">
             <CurrentUser />
             <ThemeToggle />
@@ -58,6 +60,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="flex items-center justify-between gap-3 px-4 py-3">
             <Brand />
             <div className="flex items-center gap-2">
+              <SyncStatus compact />
               <ThemeToggle />
               <LogoutButton compact />
             </div>

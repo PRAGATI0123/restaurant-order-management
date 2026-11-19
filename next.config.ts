@@ -7,6 +7,19 @@ const nextConfig: NextConfig = {
   // Hide the round "N" development badge: it sat on top of the sidebar's
   // "Log out" button. Dev-only; Next.js still shows build and runtime errors.
   devIndicators: false,
+  // The service worker must never be cached by the browser, or a new version
+  // of the app would take days to reach the tills (Next.js PWA guide).
+  async headers() {
+    return [
+      {
+        source: "/sw.js",
+        headers: [
+          { key: "Content-Type", value: "application/javascript; charset=utf-8" },
+          { key: "Cache-Control", value: "no-cache, no-store, must-revalidate" },
+        ],
+      },
+    ];
+  },
   experimental: {
     instantInsights: {
       // This POS draws its pages in the browser, from data on the device and a
