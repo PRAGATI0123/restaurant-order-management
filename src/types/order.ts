@@ -11,7 +11,7 @@ export type OrderStatus = "new" | "preparing" | "ready" | "served" | "paid" | "c
 /** An item is either still part of the order, or cancelled (and not charged). */
 export type OrderItemStatus = "active" | "cancelled";
 
-/** One entry in the order's timeline: "Preparing, at 14:05, by Pragati". */
+/** One entry in the order's timeline: "Preparing, at 14:05, by User 4". */
 export type OrderStatusChange = {
   status: OrderStatus;
   at: IsoDateTime;

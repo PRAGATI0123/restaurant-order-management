@@ -3,12 +3,12 @@ import { createJSONStorage, persist } from "zustand/middleware";
 import { verifyPin } from "@/domain/auth/login";
 import { assertCan, type Action } from "@/domain/auth/permissions";
 import { DomainError } from "@/domain/errors";
-import { OWNER_ACCOUNT } from "@/mocks/data/staff";
+import { sampleStaff } from "@/mocks/data/staff";
 import type { Id } from "@/types/common";
 import type { Staff } from "@/types/staff";
 
 type AuthState = {
-  /** Everyone who can act in the app. Today that's one account: the owner. */
+  /** Everyone who can log in: User 1–4, one per role. */
   staff: Staff[];
   /** Who is logged in on this device, if anyone. */
   currentStaffId?: Id;
@@ -18,17 +18,17 @@ type AuthState = {
    */
   loggedOutByUser: boolean;
 
-  /** Checks the PIN and logs the owner in. Throws DomainError on a wrong PIN. */
-  login: (pin: string) => Staff;
+  /** Checks the PIN and logs this user in. Throws DomainError on a wrong PIN. */
+  login: (staffId: Id, pin: string) => Staff;
   logout: () => void;
 };
 
 /**
  * THE AUTH STORE: who is logged in.
  *
- * There is ONE account (the owner, Pragati Gautam, PIN 1234). The role and
- * permission checks still run on every action, so more staff with their own
- * roles can be added later without changing any screen.
+ * Four users, one per role (manager, cashier, waiter, kitchen), all with the
+ * same demo PIN. Each role sees only its own pages and buttons, and every
+ * store action checks the role again (requirePermission).
  *
  * Only the login itself (currentStaffId) is remembered, in sessionStorage:
  * it survives a page refresh but not closing the browser tab.
@@ -40,13 +40,14 @@ type AuthState = {
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
-      staff: [OWNER_ACCOUNT],
+      staff: sampleStaff,
       currentStaffId: undefined,
       loggedOutByUser: false,
 
-      login: (pin) => {
-        const owner = get().staff.find((s) => s.id === OWNER_ACCOUNT.id) ?? OWNER_ACCOUNT;
-        const member = verifyPin(owner, pin);
+      login: (staffId, pin) => {
+        const user = get().staff.find((s) => s.id === staffId);
+        if (!user) throw new DomainError("Choose who is logging in.");
+        const member = verifyPin(user, pin);
         set({ currentStaffId: member.id, loggedOutByUser: false });
         return member;
       },

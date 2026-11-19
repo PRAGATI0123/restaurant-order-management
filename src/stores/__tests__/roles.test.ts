@@ -16,16 +16,27 @@ beforeEach(() => {
 });
 
 describe("logging in", () => {
-  it("logs the owner in with PIN 1234, and out again", () => {
-    const owner = useAuthStore.getState().login("1234");
-    expect(owner).toMatchObject({ name: "Pragati Gautam", role: "manager" });
-    expect(useAuthStore.getState().currentStaffId).toBe("staff-owner");
+  it("has one user per role, all with the same PIN 1234", () => {
+    expect(useAuthStore.getState().staff.map((s) => [s.name, s.role, s.pin])).toEqual([
+      ["User 1", "manager", "1234"],
+      ["User 2", "cashier", "1234"],
+      ["User 3", "waiter", "1234"],
+      ["User 4", "kitchen", "1234"],
+    ]);
+  });
+
+  it("logs a user in with the PIN, and out again", () => {
+    const waiter = useAuthStore.getState().login("staff-waiter", "1234");
+    expect(waiter).toMatchObject({ name: "User 3", role: "waiter" });
+    expect(useAuthStore.getState().currentStaffId).toBe("staff-waiter");
     useAuthStore.getState().logout();
     expect(useAuthStore.getState().currentStaffId).toBeUndefined();
   });
 
   it("stays logged out on a wrong PIN", () => {
-    expect(() => useAuthStore.getState().login("0000")).toThrow("Wrong PIN");
+    expect(() => useAuthStore.getState().login("staff-manager", "0000")).toThrow(
+      "Wrong PIN",
+    );
     expect(useAuthStore.getState().currentStaffId).toBeUndefined();
   });
 
@@ -34,9 +45,6 @@ describe("logging in", () => {
   });
 });
 
-// Only the owner (a manager) logs in today, but every action still checks the
-// role. These tests act as the other roles to prove those checks hold, so
-// staff with smaller roles can be added later safely.
 describe("each role can only do its own work (checked in the store, not just the screen)", () => {
   it("a waiter serves food but can't take money or cancel", () => {
     loginAs("waiter");
@@ -85,7 +93,7 @@ describe("each role can only do its own work (checked in the store, not just the
   it("records WHO did each step in the order's timeline", () => {
     loginAs("kitchen");
     service().setOrderStatus("order-103", "preparing");
-    expect(order("order-103").statusHistory.at(-1)?.by).toBe("test-kitchen");
+    expect(order("order-103").statusHistory.at(-1)?.by).toBe("staff-kitchen");
   });
 
   it("only a manager changes settings", () => {
@@ -121,10 +129,10 @@ describe("settings take effect", () => {
 describe("logging out on purpose", () => {
   it("is remembered until the next login, so the next person starts fresh", () => {
     const auth = () => useAuthStore.getState();
-    auth().login("1234");
+    auth().login("staff-waiter", "1234");
     auth().logout();
     expect(auth().loggedOutByUser).toBe(true);
-    auth().login("1234");
+    auth().login("staff-cashier", "1234");
     expect(auth().loggedOutByUser).toBe(false);
   });
 });

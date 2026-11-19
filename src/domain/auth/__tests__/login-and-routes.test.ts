@@ -9,15 +9,15 @@ import {
 import { actionForPath, canOpen, homeFor } from "@/domain/auth/routes";
 import type { Staff } from "@/types/staff";
 
-const owner: Staff = { id: "o", name: "Pragati Gautam", role: "manager", pin: "1234" };
+const user: Staff = { id: "u3", name: "User 3", role: "waiter", pin: "1234" };
 
 describe("verifyPin", () => {
-  it("lets the owner in with the right PIN", () => {
-    expect(verifyPin(owner, "1234").name).toBe("Pragati Gautam");
+  it("lets the user in with the right PIN", () => {
+    expect(verifyPin(user, "1234").name).toBe("User 3");
   });
 
   it("refuses a wrong PIN without showing the right one", () => {
-    expect(() => verifyPin(owner, "4321")).toThrow("Wrong PIN. Try again.");
+    expect(() => verifyPin(user, "4321")).toThrow("Wrong PIN. Try again.");
   });
 });
 

@@ -1,12 +1,21 @@
 "use client";
 
-import { Lock, LogIn } from "lucide-react";
+import {
+  Banknote,
+  ChefHat,
+  Lock,
+  LogIn,
+  Store,
+  Utensils,
+  type LucideIcon,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { NumPad } from "@/components/ui/num-pad";
+import { mainNav } from "@/config/nav";
 import {
   NO_ATTEMPTS,
   PIN_LENGTH,
@@ -19,22 +28,34 @@ import { canOpen, homeFor } from "@/domain/auth/routes";
 import { DomainError } from "@/domain/errors";
 import { useNow } from "@/lib/hooks/use-now";
 import { cn } from "@/lib/utils/cn";
-import { OWNER_ACCOUNT } from "@/mocks/data/staff";
+import { SHARED_PIN } from "@/mocks/data/staff";
 import { useAuthStore } from "@/stores/auth-store";
-import type { Staff } from "@/types/staff";
+import type { Id } from "@/types/common";
+import type { Role, Staff } from "@/types/staff";
 
-/** "Pragati Gautam" → "PG" */
-const initials = (name: string) =>
-  name
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((word) => word[0]?.toUpperCase() ?? "")
-    .join("");
+const ROLE_ICON: Record<Role, LucideIcon> = {
+  manager: Store,
+  cashier: Banknote,
+  waiter: Utensils,
+  kitchen: ChefHat,
+};
+
+/**
+ * The pages a role can open, in menu order: "Tables · Orders".
+ * Worked out from the same rules the app uses (domain/auth/routes.ts), so the
+ * login screen can never promise a page the role can't actually open.
+ */
+function pagesFor(role: Role): string {
+  const pages = mainNav.filter((item) => canOpen(role, item.href));
+  return pages.length === mainNav.length
+    ? "All pages"
+    : pages.map((item) => item.label).join(" · ");
+}
 
 /**
  * Where to go after logging in: back to the page that sent you here (?next=),
- * if it's a page of this app; else the start page. Read from the address bar
- * only when logging in, in the browser.
+ * if it's a page of this app and your role may open it; else your start page.
+ * Read from the address bar only when logging in, in the browser.
  */
 function destinationFor(member: Staff): string {
   const next = new URLSearchParams(window.location.search).get("next");
@@ -43,25 +64,32 @@ function destinationFor(member: Staff): string {
 }
 
 /**
- * LOGIN: one account, one PIN. It logs in as soon as the 4th digit is typed
- * (no extra button to find). 5 wrong PINs in a row lock the pad for 30
- * seconds (domain/auth/login.ts).
+ * LOGIN: tap a user (each card says its role and which pages it opens), then
+ * type the PIN. It logs in as soon as the 4th digit is typed. 5 wrong PINs in
+ * a row lock the pad for 30 seconds (domain/auth/login.ts).
  */
 export function LoginPanel() {
   const router = useRouter();
+  const staff = useAuthStore((s) => s.staff);
   const login = useAuthStore((s) => s.login);
   const now = useNow(1000); // for the lock countdown
 
+  const [staffId, setStaffId] = useState<Id>();
   const [pin, setPin] = useState("");
   const [error, setError] = useState<string>();
   const [attempts, setAttempts] = useState<LoginAttempts>(NO_ATTEMPTS);
+
+  const selected = staff.find((s) => s.id === staffId);
   const lockedFor = now === null ? 0 : secondsLocked(attempts, now);
 
   function tryLogin(fullPin: string) {
+    if (!selected) return;
     try {
-      const member = login(fullPin);
+      const member = login(selected.id, fullPin);
       setAttempts(NO_ATTEMPTS);
-      toast.success(`Welcome, ${member.name}`);
+      toast.success(`Welcome, ${member.name}`, {
+        description: `Logged in as ${ROLE_LABEL[member.role]}`,
+      });
       router.replace(destinationFor(member));
     } catch (e) {
       if (!(e instanceof DomainError)) throw e;
@@ -85,73 +113,117 @@ export function LoginPanel() {
   }
 
   return (
-    <Card className="flex w-full max-w-sm flex-col gap-5 p-6 sm:p-8">
-      <div className="flex flex-col items-center gap-3 text-center">
-        <span
-          className="flex size-16 items-center justify-center rounded-full bg-accent text-xl font-bold text-accent-foreground"
-          aria-hidden="true"
-        >
-          {initials(OWNER_ACCOUNT.name)}
-        </span>
+    <Card className="grid w-full max-w-4xl gap-8 p-6 sm:p-8 md:grid-cols-2">
+      <div className="flex flex-col gap-4">
         <div>
-          <h1 className="font-display text-3xl font-semibold">{OWNER_ACCOUNT.name}</h1>
-          <p className="text-muted-foreground">{ROLE_LABEL[OWNER_ACCOUNT.role]}</p>
+          <h1 className="font-display text-3xl font-semibold">Who&apos;s working?</h1>
+          <p className="text-muted-foreground">Tap your user, then enter your PIN.</p>
         </div>
+        <div role="radiogroup" aria-label="User" className="grid grid-cols-2 gap-3">
+          {staff.map((member) => {
+            const Icon = ROLE_ICON[member.role];
+            const isSelected = member.id === staffId;
+            return (
+              <button
+                key={member.id}
+                type="button"
+                role="radio"
+                aria-checked={isSelected}
+                onClick={() => {
+                  setStaffId(member.id);
+                  setPin("");
+                  setError(undefined);
+                }}
+                className={cn(
+                  "flex flex-col items-start gap-3 rounded-2xl border-2 p-4 text-left transition-colors",
+                  isSelected
+                    ? "border-primary bg-primary/10"
+                    : "border-border hover:bg-surface-muted",
+                )}
+              >
+                <span
+                  className={cn(
+                    "flex size-10 items-center justify-center rounded-xl",
+                    isSelected
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-surface-muted text-primary",
+                  )}
+                >
+                  <Icon className="size-5" aria-hidden="true" />
+                </span>
+                <span>
+                  <span className="block font-semibold">{member.name}</span>
+                  <span className="block text-sm font-semibold text-primary">
+                    {ROLE_LABEL[member.role]}
+                  </span>
+                  <span className="mt-1 block text-xs text-muted-foreground">
+                    {pagesFor(member.role)}
+                  </span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        <p className="rounded-xl bg-surface-muted px-3 py-2 text-sm text-muted-foreground">
+          <span className="font-semibold text-foreground">Demo PIN for every user:</span>{" "}
+          {SHARED_PIN}
+        </p>
       </div>
 
-      <div
-        className="flex h-16 items-center justify-center gap-4 rounded-xl border border-border bg-background"
-        aria-label={`${pin.length} of ${PIN_LENGTH} PIN digits entered`}
-        role="img"
-      >
-        {Array.from({ length: PIN_LENGTH }, (_, i) => (
-          <span
-            key={i}
-            className={cn(
-              "size-4 rounded-full",
-              i < pin.length ? "bg-primary" : "bg-border",
-            )}
-          />
-        ))}
+      <div className="flex flex-col gap-4">
+        <div
+          className="flex h-16 items-center justify-center gap-4 rounded-xl border border-border bg-background"
+          aria-label={`${pin.length} of ${PIN_LENGTH} PIN digits entered`}
+          role="img"
+        >
+          {Array.from({ length: PIN_LENGTH }, (_, i) => (
+            <span
+              key={i}
+              className={cn(
+                "size-4 rounded-full",
+                i < pin.length ? "bg-primary" : "bg-border",
+              )}
+            />
+          ))}
+        </div>
+
+        <p
+          role="alert"
+          className={cn(
+            "min-h-6 text-center text-sm font-semibold",
+            error ? "text-danger" : "text-muted-foreground",
+          )}
+        >
+          {lockedFor > 0 ? (
+            <span className="inline-flex items-center gap-1.5 text-danger">
+              <Lock className="size-4" aria-hidden="true" /> Locked. Try again in{" "}
+              {lockedFor} s.
+            </span>
+          ) : (
+            (error ??
+            (selected
+              ? `${selected.name} (${ROLE_LABEL[selected.role]}): enter your PIN.`
+              : ""))
+          )}
+        </p>
+
+        <NumPad
+          label="PIN"
+          value={pin}
+          onChange={changePin}
+          maxLength={PIN_LENGTH}
+          className={cn((!selected || lockedFor > 0) && "pointer-events-none opacity-50")}
+        />
+        <Button
+          size="lg"
+          fullWidth
+          disabled={!selected || pin.length !== PIN_LENGTH || lockedFor > 0}
+          onClick={() => tryLogin(pin)}
+        >
+          <LogIn aria-hidden="true" />
+          {selected ? `Log in as ${selected.name}` : "Choose your user first"}
+        </Button>
       </div>
-
-      <p
-        role="alert"
-        className={cn(
-          "min-h-6 text-center text-sm font-semibold",
-          error ? "text-danger" : "text-muted-foreground",
-        )}
-      >
-        {lockedFor > 0 ? (
-          <span className="inline-flex items-center gap-1.5 text-danger">
-            <Lock className="size-4" aria-hidden="true" /> Locked. Try again in{" "}
-            {lockedFor} s.
-          </span>
-        ) : (
-          (error ?? "Enter your 4-digit PIN.")
-        )}
-      </p>
-
-      <NumPad
-        label="PIN"
-        value={pin}
-        onChange={changePin}
-        maxLength={PIN_LENGTH}
-        className={cn(lockedFor > 0 && "pointer-events-none opacity-50")}
-      />
-      <Button
-        size="lg"
-        fullWidth
-        disabled={pin.length !== PIN_LENGTH || lockedFor > 0}
-        onClick={() => tryLogin(pin)}
-      >
-        <LogIn aria-hidden="true" /> Log in
-      </Button>
-
-      <p className="rounded-xl bg-surface-muted px-3 py-2 text-center text-sm text-muted-foreground">
-        <span className="font-semibold text-foreground">Demo PIN:</span>{" "}
-        {OWNER_ACCOUNT.pin}
-      </p>
     </Card>
   );
 }
